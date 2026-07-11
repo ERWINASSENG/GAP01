@@ -1,32 +1,35 @@
-export interface ChargementItem {
-  date: string;       // Date au format YYYY-MM-DD
-  dn: string;         // Document Note / Bon de livraison
-  produit: string;    // Nom du produit
-  qte: number;        // Quantité
-  pu: number;         // Prix unitaire
-  montant: number;    // Montant total de la ligne
+export interface OperationItem {
+  id?: string;
+  operation_id?: string;
+  date: string;
+  dn: string;
+  produit: string;
+  qte: number;
+  pu: number;
+  montant: number;
 }
 
 export interface Operation {
   id: string;
-  site: string; // e.g., 'Douala', 'Yaoundé', 'Kribi', 'AFISA'
+  site: string;
   type: 'Chargement' | 'Déchargement' | 'Surmontage' | 'Transfert' | 'Son' | 'Chargement des wagons';
-  date: string; // 'YYYY-MM-DD'
-  heure: string; // 'HH:MM'
-  quantite?: number; // For Déchargement, Surmontage, Transfert
-  produit?: string; // e.g., 'Ciment', 'Farine', 'Gazole'
-  destination?: string; // For Transfert
+  date: string;
+  heure: string;
   details?: string;
-  sonLevel?: string; // For Son (e.g., 'Faible', 'Moyen', 'Élevé')
-  frequence?: string; // For Son (e.g., 'Basse', 'Haute')
+  sonLevel?: string;
+  frequence?: string;
   collaborateur?: string;
-  items?: ChargementItem[]; // Table de lignes pour les opérations de type Chargement
-  isDraft?: boolean; // Indique si l'opération est un brouillon
-  user_id?: string; // ID de l'utilisateur Supabase pour l'application des politiques RLS
+  isDraft?: boolean;
+  user_id?: string;
+  items?: OperationItem[];
+  // Temporary fields to maintain compatibility while refactoring
+  quantite?: number;
+  produit?: string;
+  destination?: string;
 }
 
 export interface MonthlySummary {
-  month: string; // e.g., 'Juillet 2026'
+  month: string;
   site: string;
   type: string;
   count: number;

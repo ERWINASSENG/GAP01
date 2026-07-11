@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CahierService } from '../../../core/services/cahier.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
-import { Operation, MonthlySummary, ChargementItem } from '../../../shared/models/cahier.model';
+import { Operation, MonthlySummary, OperationItem } from '../../../shared/models/cahier.model';
 
 interface OperationFormValue {
   site?: string;
@@ -18,7 +18,7 @@ interface OperationFormValue {
   sonLevel?: string | null;
   frequence?: string | null;
   details?: string | null;
-  items?: Partial<ChargementItem>[];
+  items?: Partial<OperationItem>[];
 }
 
 @Component({
@@ -242,7 +242,7 @@ export class CahierComponent implements OnInit {
 
           this.itemsFormArray.clear();
           if (raw.items && Array.isArray(raw.items)) {
-            raw.items.forEach((item: Partial<ChargementItem>) => {
+            raw.items.forEach((item: Partial<OperationItem>) => {
               this.itemsFormArray.push(this.createItemFormGroup(
                 item.date,
                 item.dn,
@@ -287,7 +287,7 @@ export class CahierComponent implements OnInit {
       date: val.date || '',
       heure: val.heure || '',
       details: val.details || '',
-      items: (val.items as Partial<ChargementItem>[] || []).map(item => ({
+      items: (val.items as Partial<OperationItem>[] || []).map(item => ({
         date: item.date || '',
         dn: item.dn || '',
         produit: item.produit || '',
@@ -302,14 +302,14 @@ export class CahierComponent implements OnInit {
   readonly totalChargement = computed<number>(() => {
     const val = this.formValue();
     if (!val.items || !Array.isArray(val.items)) return 0;
-    return val.items.reduce((sum: number, item: Partial<ChargementItem>) => sum + (Number(item?.montant) || 0), 0);
+    return val.items.reduce((sum: number, item: Partial<OperationItem>) => sum + (Number(item?.montant) || 0), 0);
   });
 
   // Calculate instant total of quantities (Tonnage / sacs)
   readonly totalQuantite = computed<number>(() => {
     const val = this.formValue();
     if (!val.items || !Array.isArray(val.items)) return 0;
-    return val.items.reduce((sum: number, item: Partial<ChargementItem>) => sum + (Number(item?.qte) || 0), 0);
+    return val.items.reduce((sum: number, item: Partial<OperationItem>) => sum + (Number(item?.qte) || 0), 0);
   });
 
   readonly tableColspan = computed<number>(() => {
@@ -330,7 +330,7 @@ export class CahierComponent implements OnInit {
 
   getOperationTotal(op: Operation): number {
     if (!op || !op.items || !Array.isArray(op.items)) return 0;
-    return op.items.reduce((sum: number, item: ChargementItem) => sum + (Number(item?.montant) || 0), 0);
+    return op.items.reduce((sum: number, item: OperationItem) => sum + (Number(item?.montant) || 0), 0);
   }
 
   // Opens the creation page view
@@ -441,7 +441,7 @@ export class CahierComponent implements OnInit {
       destination: val.destination || undefined,
       sonLevel: val.sonLevel || undefined,
       frequence: val.frequence || undefined,
-      items: (val.items as Partial<ChargementItem>[] || []).map(item => ({
+      items: (val.items as Partial<OperationItem>[] || []).map(item => ({
         date: item.date || val.date || '',
         dn: item.dn || '',
         produit: item.produit || '',
@@ -566,7 +566,7 @@ export class CahierComponent implements OnInit {
       date: val.date,
       heure: val.heure,
       details: val.details || undefined,
-      items: (val.items as Partial<ChargementItem>[] || []).map(item => ({
+      items: (val.items as Partial<OperationItem>[] || []).map(item => ({
         date: item.date || '',
         dn: item.dn || '',
         produit: item.produit || '',
@@ -687,6 +687,7 @@ export class CahierComponent implements OnInit {
         ops: groups[dateKey].ops
       }));
   });
+
 
 }
 

@@ -49,17 +49,46 @@ export class CahierService {
     // 2. Try to sync with Supabase if the table exists
     try {
       const { data, error } = await this.supabaseService.client
-        .from('cahier_operations')
-        .select('*')
+        .from('operations')
+        .select('*, operation_items(*)')
         .order('date', { ascending: false });
 
       if (!error && data) {
-        this._operations.set(data);
-        this.saveToLocal(data);
+        const mappedOps: Operation[] = (data as any[]).map(dbOp => {
+          const isDraftVal = dbOp.isdraft !== undefined ? dbOp.isdraft : dbOp.isDraft;
+          const sonLevelVal = dbOp.sonlevel !== undefined ? dbOp.sonlevel : dbOp.sonLevel;
+          return {
+            id: dbOp.id,
+            site: dbOp.site,
+            type: dbOp.type,
+            date: dbOp.date,
+            heure: dbOp.heure ? dbOp.heure.slice(0, 5) : '',
+            details: dbOp.details || '',
+            sonLevel: sonLevelVal || 'Moyen',
+            frequence: dbOp.frequence || 'Basse',
+            collaborateur: dbOp.collaborateur || 'Collaborateur',
+            isDraft: isDraftVal || false,
+            user_id: dbOp.user_id,
+            items: (dbOp.operation_items || []).map((dbItem: any) => ({
+              id: dbItem.id,
+              operation_id: dbItem.operation_id,
+              date: dbOp.date,
+              dn: dbItem.dn || '',
+              produit: dbItem.produit || '',
+              qte: Number(dbItem.quantite) || 0,
+              pu: Number(dbItem.pu) || 0,
+              montant: Number(dbItem.montant) || 0
+            }))
+          };
+        });
+
+        this._operations.set(mappedOps);
+        this.saveToLocal(mappedOps);
+      } else if (error) {
+        console.error('Error fetching operations from Supabase:', error);
       }
-    } catch {
-      // Silently ignore or log if table is not provisioned yet, fallback is active
-      console.log('Supabase cahier_operations table not configured. Using local state.');
+    } catch (err) {
+      console.error('Supabase operations table error:', err);
     }
   }
 
@@ -103,11 +132,49 @@ export class CahierService {
 
     // Try to upsert to Supabase
     try {
-      await this.supabaseService.client
-        .from('cahier_operations')
-        .upsert([finalizedOp]);
-    } catch {
-      // Fail silently, local storage is persistent enough
+      const { data: opData, error: opError } = await this.supabaseService.client
+        .from('operations')
+        .upsert([{
+          id: finalizedOp.id,
+          site: finalizedOp.site,
+          type: finalizedOp.type,
+          date: finalizedOp.date,
+          heure: finalizedOp.heure,
+          details: finalizedOp.details,
+          sonlevel: finalizedOp.sonLevel,
+          frequence: finalizedOp.frequence,
+          collaborateur: finalizedOp.collaborateur,
+          isdraft: finalizedOp.isDraft,
+          user_id: finalizedOp.user_id
+        }])
+        .select()
+        .single();
+        
+      if (!opError && opData) {
+          // Delete old items first to ensure perfect sync
+          await this.supabaseService.client
+            .from('operation_items')
+            .delete()
+            .eq('operation_id', finalizedOp.id);
+
+          if (finalizedOp.items && finalizedOp.items.length > 0) {
+            // Insert new items
+            const dbItems = finalizedOp.items.map(item => ({
+              id: item.id || crypto.randomUUID(),
+              operation_id: finalizedOp.id,
+              dn: item.dn || '',
+              produit: item.produit || '',
+              quantite: Number(item.qte) || 0,
+              pu: Number(item.pu) || 0,
+              montant: Number(item.montant) || 0
+            }));
+            await this.supabaseService.client
+              .from('operation_items')
+              .insert(dbItems);
+          }
+      }
+    } catch (err) {
+      console.error('Error saving operation to Supabase:', err);
     }
 
     return finalizedOp;
@@ -152,11 +219,49 @@ export class CahierService {
 
     // Try to upsert to Supabase
     try {
-      await this.supabaseService.client
-        .from('cahier_operations')
-        .upsert([draftOp]);
-    } catch {
-      // Fail silently
+      const { data: opData, error: opError } = await this.supabaseService.client
+        .from('operations')
+        .upsert([{
+          id: draftOp.id,
+          site: draftOp.site,
+          type: draftOp.type,
+          date: draftOp.date,
+          heure: draftOp.heure,
+          details: draftOp.details,
+          sonlevel: draftOp.sonLevel,
+          frequence: draftOp.frequence,
+          collaborateur: draftOp.collaborateur,
+          isdraft: draftOp.isDraft,
+          user_id: draftOp.user_id
+        }])
+        .select()
+        .single();
+        
+      if (!opError && opData) {
+          // Delete old items first to ensure perfect sync
+          await this.supabaseService.client
+            .from('operation_items')
+            .delete()
+            .eq('operation_id', draftOp.id);
+
+          if (draftOp.items && draftOp.items.length > 0) {
+            // Insert new items
+            const dbItems = draftOp.items.map(item => ({
+              id: item.id || crypto.randomUUID(),
+              operation_id: draftOp.id,
+              dn: item.dn || '',
+              produit: item.produit || '',
+              quantite: Number(item.qte) || 0,
+              pu: Number(item.pu) || 0,
+              montant: Number(item.montant) || 0
+            }));
+            await this.supabaseService.client
+              .from('operation_items')
+              .insert(dbItems);
+          }
+      }
+    } catch (err) {
+      console.error('Error saving draft to Supabase:', err);
     }
 
     return draftOp;
@@ -171,12 +276,18 @@ export class CahierService {
     this.saveToLocal(updated);
 
     try {
+      // Delete child operation items first to prevent foreign key constraint violations
       await this.supabaseService.client
-        .from('cahier_operations')
+        .from('operation_items')
+        .delete()
+        .eq('operation_id', id);
+
+      await this.supabaseService.client
+        .from('operations')
         .delete()
         .eq('id', id);
-    } catch {
-      // Ignored, handled locally
+    } catch (err) {
+      console.error('Error deleting operation from Supabase:', err);
     }
 
     return true;
