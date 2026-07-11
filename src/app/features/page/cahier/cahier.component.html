@@ -119,14 +119,14 @@
                     <thead>
                       <!-- Table Title Row matching the screenshot -->
                       <tr class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-bold uppercase tracking-wider text-center text-sm">
-                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" colspan="7">
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" [attr.colspan]="operationForm.value.type === 'Chargement' ? 7 : 6">
                           {{ (operationForm.value.type || 'Chargement') | uppercase }} {{ (operationForm.value.site || 'SCMC') | uppercase }}
                         </th>
                       </tr>
                       <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-36 border border-slate-300 dark:border-slate-700 text-center">DATE</th>
-                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
-                          @if (operationForm.value.type === 'Chargement') {
+                        @if (operationForm.value.type === 'Chargement') {
+                          <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
                             <div class="flex items-center justify-center">
                               <select 
                                 [value]="globalDnPrefix()"
@@ -138,10 +138,8 @@
                                 <option value="ISTI">ISTI</option>
                               </select>
                             </div>
-                          } @else {
-                            <span>DN / RÉFÉRENCE</span>
-                          }
-                        </th>
+                          </th>
+                        }
                         <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">PRODUIT</th>
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-24 border border-slate-300 dark:border-slate-700 text-center">QTE</th>
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">PU (FCFA)</th>
@@ -160,9 +158,9 @@
                               class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
                             />
                           </td>
-                          <!-- DN Input (Dropdown Prefix + Number or single input based on type) -->
-                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
-                            @if (operationForm.value.type === 'Chargement') {
+                          <!-- DN Input (Dropdown Prefix + Number, only displayed when type === 'Chargement') -->
+                          @if (operationForm.value.type === 'Chargement') {
+                            <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                               <div class="flex items-center gap-2 justify-center">
                                 <span class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500 dark:text-slate-400 uppercase select-none">
                                   {{ itemGroup.get('dnPrefix')?.value || 'DN' }}
@@ -174,15 +172,8 @@
                                   class="w-full max-w-[100px] px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm uppercase text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
                                 />
                               </div>
-                            } @else {
-                              <input 
-                                type="text" 
-                                formControlName="dn"
-                                placeholder="ex. DN-591"
-                                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
-                              />
-                            }
-                          </td>
+                            </td>
+                          }
                           <!-- Produit Input -->
                           <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                             <input 
@@ -239,7 +230,7 @@
                     </tbody>
                     <tfoot>
                       <tr class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-900 dark:text-white">
-                        <td colspan="5" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                        <td [attr.colspan]="operationForm.value.type === 'Chargement' ? 5 : 4" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
                         <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
                           {{ totalChargement() | number }}
                         </td>
@@ -554,14 +545,16 @@
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" colspan="10">
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="selectedSummary()?.type === 'Chargement' ? 10 : 9">
                         LISTE DES MOUVEMENTS ENREGISTRÉS
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       <th class="px-2 py-2 sm:px-4 sm:py-3 w-20 border border-slate-300 dark:border-slate-700 text-center">Heure</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
-                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
+                      @if (selectedSummary()?.type === 'Chargement') {
+                        <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
+                      }
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Qte</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU</th>
@@ -583,9 +576,11 @@
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
-                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
-                            {{ item.dn }}
-                          </td>
+                          @if (selectedSummary()?.type === 'Chargement') {
+                            <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
+                              {{ item.dn }}
+                            </td>
+                          }
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
                             {{ item.produit }}
                           </td>
