@@ -68,12 +68,12 @@
                   <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider shrink-0">
                     Choix du Type d'opération
                   </h4>
-                  <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                  <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     @for (typeOption of operationTypes; track typeOption) {
                       <button 
                         type="button"
                         (click)="selectType(typeOption)"
-                        class="flex-1 md:flex-initial px-3 py-2 sm:px-4 sm:py-2.5 border rounded-xl font-semibold text-xs sm:text-sm text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        class="flex-1 md:flex-initial whitespace-nowrap px-3 py-2 sm:px-4 sm:py-2.5 border rounded-xl font-semibold text-xs sm:text-sm text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                         [ngClass]="{
                           'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-500/60 dark:text-indigo-300 ring-2 ring-indigo-500/20': operationForm.value.type === typeOption,
                           'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300': operationForm.value.type !== typeOption
@@ -83,7 +83,8 @@
                             typeOption === 'Chargement' ? 'unarchive' :
                             typeOption === 'Déchargement' ? 'archive' :
                             typeOption === 'Surmontage' ? 'layers' :
-                            typeOption === 'Transfert' ? 'local_shipping' : 'volume_up'
+                            typeOption === 'Transfert' ? 'local_shipping' : 
+                            typeOption === 'Chargement des wagons' ? 'train' : 'grain'
                           }}
                         </mat-icon>
                         <span>{{ typeOption }}</span>
@@ -94,6 +95,43 @@
                     }
                   </div>
                 </div>
+
+                <!-- Sub-selection of Blé / Farine if Chargement des wagons is selected -->
+                @if (operationForm.value.type === 'Chargement des wagons') {
+                  <div class="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4 mt-6 animate-fade-in" id="wagon-sub-selection">
+                    <h5 class="text-[10px] sm:text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider whitespace-nowrap">
+                      Sélectionnez le Produit du Wagon
+                    </h5>
+                    <div class="flex items-center gap-4 w-full md:w-auto md:justify-end">
+                      <button 
+                        type="button"
+                        (click)="selectWagonProduct('Blé')"
+                        class="flex-1 md:flex-initial px-4 py-1.5 border rounded-lg font-semibold text-xs text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        [ngClass]="{
+                          'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-500/60 dark:text-indigo-300 ring-2 ring-indigo-500/20': operationForm.value.produit === 'Blé',
+                          'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300': operationForm.value.produit !== 'Blé'
+                        }"
+                        id="btn-wagon-ble"
+                      >
+                        <mat-icon class="text-amber-500 !text-lg !h-5 !w-5 flex items-center justify-center">grass</mat-icon>
+                        <span>Blé</span>
+                      </button>
+                      <button 
+                        type="button"
+                        (click)="selectWagonProduct('Farine')"
+                        class="flex-1 md:flex-initial px-4 py-1.5 border rounded-lg font-semibold text-xs text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        [ngClass]="{
+                          'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-500/60 dark:text-indigo-300 ring-2 ring-indigo-500/20': operationForm.value.produit === 'Farine',
+                          'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300': operationForm.value.produit !== 'Farine'
+                        }"
+                        id="btn-wagon-farine"
+                      >
+                        <mat-icon class="text-amber-300 !text-lg !h-5 !w-5 flex items-center justify-center">cookie</mat-icon>
+                        <span>Farine</span>
+                      </button>
+                    </div>
+                  </div>
+                }
               </div>
             }
 
@@ -113,35 +151,53 @@
                       <span>Ajouter une ligne</span>
                     </button>
                   </div>
-                <!-- Dynamic Table inside Form with horizontal scrolling wrapper for mobile responsive display -->
+                         <!-- Dynamic Table inside Form with horizontal scrolling wrapper for mobile responsive display -->
                 <div class="overflow-x-auto w-full border border-black rounded-lg">
                   <table class="table-scmc min-w-[850px] w-full text-center">
                     <thead>
                       <!-- Table Title Row matching the screenshot -->
                       <tr class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-bold uppercase tracking-wider text-center text-sm">
-                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" [attr.colspan]="operationForm.value.type === 'Chargement' ? 7 : 6">
-                          {{ (operationForm.value.type || 'Chargement') | uppercase }} {{ (operationForm.value.site || 'SCMC') | uppercase }}
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" [attr.colspan]="tableColspan()">
+                          @if (operationForm.value.type === 'Chargement des wagons') {
+                            CHARGEMENT WAGONS {{ (operationForm.value.produit || '') | uppercase }}@if (operationForm.value.site !== 'AUTRE') { {{ ' ' + (operationForm.value.site || 'SCMC') | uppercase }} }
+                          } @else {
+                            {{ (operationForm.value.type || 'Chargement') | uppercase }}@if (operationForm.value.site !== 'AUTRE') { {{ ' ' + (operationForm.value.site || 'SCMC') | uppercase }} }
+                          }
                         </th>
                       </tr>
-                      <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                      <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-36 border border-slate-300 dark:border-slate-700 text-center">DATE</th>
-                        @if (operationForm.value.type === 'Chargement') {
-                          <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
-                            <div class="flex items-center justify-center">
-                              <select 
-                                [value]="globalDnPrefix()"
-                                (change)="onGlobalPrefixChange($any($event.target).value)"
-                                class="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
-                              >
-                                <option value="DN">DN</option>
-                                <option value="LTI">LTI</option>
-                                <option value="ISTI">ISTI</option>
-                              </select>
-                            </div>
-                          </th>
+                        
+                        @if (operationForm.value.type === 'Chargement des wagons') {
+                          @if (operationForm.value.produit === 'Blé') {
+                            <!-- CHARGEMENT WAGONS BLE: DATE, N° WAGON, TONNAGE, PU, MONTANT -->
+                            <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">N° WAGON</th>
+                            <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">TONNAGE</th>
+                          } @else {
+                            <!-- CHARGEMENT WAGONS FARINE: DATE, Nbr SACS, PU, MONTANT -->
+                            <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">Nbr SACS</th>
+                          }
+                        } @else {
+                          <!-- Standard Types: DATE, [DN / LTI / ISTI], PRODUIT, QTE, PU, MONTANT -->
+                          @if (operationForm.value.type === 'Chargement') {
+                            <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
+                              <div class="flex items-center justify-center">
+                                <select 
+                                  [value]="globalDnPrefix()"
+                                  (change)="onGlobalPrefixChange($any($event.target).value)"
+                                  class="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                >
+                                  <option value="DN">DN</option>
+                                  <option value="LTI">LTI</option>
+                                  <option value="ISTI">ISTI</option>
+                                </select>
+                              </div>
+                            </th>
+                          }
+                          <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">PRODUIT</th>
+                          <th class="py-3 px-3 sm:py-3 sm:px-4 w-24 border border-slate-300 dark:border-slate-700 text-center">QTE</th>
                         }
-                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">PRODUIT</th>
-                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-24 border border-slate-300 dark:border-slate-700 text-center">QTE</th>
+
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">PU (FCFA)</th>
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-32 border border-slate-300 dark:border-slate-700 text-center">MONTANT (FCFA)</th>
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-12 border border-slate-300 dark:border-slate-700 text-center"></th>
@@ -158,40 +214,75 @@
                               class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
                             />
                           </td>
-                          <!-- DN Input (Dropdown Prefix + Number, only displayed when type === 'Chargement') -->
-                          @if (operationForm.value.type === 'Chargement') {
-                            <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
-                              <div class="flex items-center gap-2 justify-center">
-                                <span class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500 dark:text-slate-400 uppercase select-none">
-                                  {{ itemGroup.get('dnPrefix')?.value || 'DN' }}
-                                </span>
+
+                          @if (operationForm.value.type === 'Chargement des wagons') {
+                            @if (operationForm.value.produit === 'Blé') {
+                              <!-- N° WAGON (input mapped to dnNumber) -->
+                              <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                                 <input 
                                   type="text" 
                                   formControlName="dnNumber"
-                                  placeholder="0001"
-                                  class="w-full max-w-[100px] px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm uppercase text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                  placeholder="Wagon N°"
+                                  class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm uppercase text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
                                 />
-                              </div>
+                              </td>
+                              <!-- TONNAGE (input mapped to qte) -->
+                              <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                                <input 
+                                  type="number" 
+                                  formControlName="qte"
+                                  placeholder="Tonnage"
+                                  class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                />
+                              </td>
+                            } @else {
+                              <!-- Nbr SACS (input mapped to qte) -->
+                              <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                                <input 
+                                  type="number" 
+                                  formControlName="qte"
+                                  placeholder="Nbr sacs"
+                                  class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                />
+                              </td>
+                            }
+                          } @else {
+                            <!-- Standard DN Selection -->
+                            @if (operationForm.value.type === 'Chargement') {
+                              <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                                <div class="flex items-center gap-2 justify-center">
+                                  <span class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500 dark:text-slate-400 uppercase select-none">
+                                    {{ itemGroup.get('dnPrefix')?.value || 'DN' }}
+                                  </span>
+                                  <input 
+                                    type="text" 
+                                    formControlName="dnNumber"
+                                    placeholder="0001"
+                                    class="w-full max-w-[100px] px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm uppercase text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                  />
+                                </div>
+                              </td>
+                            }
+                            <!-- Standard PRODUIT -->
+                            <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                              <input 
+                                type="text" 
+                                formControlName="produit"
+                                placeholder="ex. Ciment"
+                                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                              />
+                            </td>
+                            <!-- Standard QTE -->
+                            <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                              <input 
+                                type="number" 
+                                formControlName="qte"
+                                placeholder="ex. 100"
+                                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                              />
                             </td>
                           }
-                          <!-- Produit Input -->
-                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
-                            <input 
-                              type="text" 
-                              formControlName="produit"
-                              placeholder="ex. Ciment"
-                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
-                            />
-                          </td>
-                          <!-- Qte Input -->
-                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
-                            <input 
-                              type="number" 
-                              formControlName="qte"
-                              placeholder="ex. 100"
-                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
-                            />
-                          </td>
+
                           <!-- PU Input -->
                           <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                             <input 
@@ -201,7 +292,7 @@
                               class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
                             />
                           </td>
-                                                 <!-- Montant Input -->
+                          <!-- Montant Input -->
                           <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                             <input 
                               type="number" 
@@ -230,18 +321,62 @@
                     </tbody>
                     <tfoot>
                       <tr class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-900 dark:text-white">
-                        <td [attr.colspan]="operationForm.value.type === 'Chargement' ? 5 : 4" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
-                        <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
-                          {{ totalChargement() | number }}
-                        </td>
-                        <td class="border border-slate-300 dark:border-slate-700"></td>
+                        @if (operationForm.value.type === 'Chargement des wagons') {
+                          @if (operationForm.value.produit === 'Blé') {
+                            <!-- CHARGEMENT WAGONS BLE: DATE & N° WAGON (colspan 2), TONNAGE (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
+                            <td colspan="2" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalQuantite() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalChargement() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                          } @else {
+                            <!-- CHARGEMENT WAGONS FARINE: DATE (colspan 1), Nbr SACS (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
+                            <td colspan="1" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalQuantite() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalChargement() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                          }
+                        } @else {
+                          @if (operationForm.value.type === 'Chargement') {
+                            <!-- Standard CHARGEMENT: DATE, SELECTOR, PRODUIT (colspan 3), QTE (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
+                            <td colspan="3" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalQuantite() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalChargement() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                          } @else {
+                            <!-- Standard Others: DATE, PRODUIT (colspan 2), QTE (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
+                            <td colspan="2" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalQuantite() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                            <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                              {{ totalChargement() | number }}
+                            </td>
+                            <td class="border border-slate-300 dark:border-slate-700"></td>
+                          }
+                        }
                       </tr>
                     </tfoot>
                   </table>
                 </div>
-                </div>
               </div>
-            }
+            </div>
+          }
 
           </form>
 
@@ -358,7 +493,8 @@
                           draft.type === 'Chargement' ? 'unarchive' :
                           draft.type === 'Déchargement' ? 'archive' :
                           draft.type === 'Surmontage' ? 'layers' :
-                          draft.type === 'Transfert' ? 'local_shipping' : 'volume_up'
+                          draft.type === 'Transfert' ? 'local_shipping' : 
+                          draft.type === 'Chargement des wagons' ? 'train' : 'grain'
                         }}
                       </mat-icon>
                       {{ draft.type || 'Type non défini' }}
@@ -438,7 +574,7 @@
                     <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border"
                         [ngClass]="{
-                          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20': summary.type === 'Chargement',
+                          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20': summary.type === 'Chargement' || summary.type === 'Chargement des wagons',
                           'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20': summary.type === 'Déchargement',
                           'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20': summary.type === 'Surmontage',
                           'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20': summary.type === 'Transfert',
@@ -449,7 +585,8 @@
                             summary.type === 'Chargement' ? 'unarchive' :
                             summary.type === 'Déchargement' ? 'archive' :
                             summary.type === 'Surmontage' ? 'layers' :
-                            summary.type === 'Transfert' ? 'local_shipping' : 'volume_up'
+                            summary.type === 'Transfert' ? 'local_shipping' : 
+                            summary.type === 'Chargement des wagons' ? 'train' : 'grain'
                           }}
                         </mat-icon>
                         {{ summary.type }}
@@ -545,14 +682,14 @@
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="selectedSummary()?.type === 'Chargement' ? 10 : 9">
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') ? 10 : 9">
                         LISTE DES MOUVEMENTS ENREGISTRÉS
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       <th class="px-2 py-2 sm:px-4 sm:py-3 w-20 border border-slate-300 dark:border-slate-700 text-center">Heure</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
-                      @if (selectedSummary()?.type === 'Chargement') {
+                      @if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') {
                         <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
                       }
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
@@ -576,7 +713,7 @@
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
-                          @if (selectedSummary()?.type === 'Chargement') {
+                          @if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
                               {{ item.dn }}
                             </td>

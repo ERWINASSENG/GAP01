@@ -10,7 +10,7 @@ export interface ChargementItem {
 export interface Operation {
   id: string;
   site: string; // e.g., 'Douala', 'Yaoundé', 'Kribi', 'AFISA'
-  type: 'Chargement' | 'Déchargement' | 'Surmontage' | 'Transfert' | 'Son';
+  type: 'Chargement' | 'Déchargement' | 'Surmontage' | 'Transfert' | 'Son' | 'Chargement des wagons';
   date: string; // 'YYYY-MM-DD'
   heure: string; // 'HH:MM'
   quantite?: number; // For Déchargement, Surmontage, Transfert

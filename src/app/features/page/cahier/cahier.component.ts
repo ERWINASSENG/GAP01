@@ -40,7 +40,7 @@ export class CahierComponent implements OnInit {
 
   // Available options
   readonly sites = ['SCMC', 'TUSCANI', 'AFISA', 'AUTRE'];
-  readonly operationTypes = ['Chargement', 'Déchargement', 'Surmontage', 'Transfert', 'Son'] as const;
+  readonly operationTypes = ['Chargement', 'Déchargement', 'Surmontage', 'Transfert', 'Son', 'Chargement des wagons'] as const;
   readonly sonLevels = ['Faible', 'Moyen', 'Élevé'];
   readonly frequences = ['Basse', 'Moyenne', 'Haute'];
 
@@ -109,11 +109,15 @@ export class CahierComponent implements OnInit {
       }
     }
 
+    const currentType = this.operationForm.controls.type.value || '';
+    const currentProduct = this.operationForm.controls.produit.value || '';
+    const isDnRequired = currentType === 'Chargement' || (currentType === 'Chargement des wagons' && currentProduct === 'Blé');
+
     const group = new FormGroup({
       date: new FormControl<string>(date || this.operationForm.controls.date.value || '', { validators: [Validators.required], nonNullable: true }),
-      dnPrefix: new FormControl<string>(prefix, { validators: [Validators.required], nonNullable: true }),
-      dnNumber: new FormControl<string>(num, { validators: [Validators.required], nonNullable: true }),
-      dn: new FormControl<string>(dn || `${prefix} ${num}`.toUpperCase().trim(), { validators: [Validators.required], nonNullable: true }),
+      dnPrefix: new FormControl<string>(prefix, { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
+      dnNumber: new FormControl<string>(num, { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
+      dn: new FormControl<string>(dn || `${prefix} ${num}`.toUpperCase().trim(), { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
       produit: new FormControl<string>(produit, { validators: [Validators.required], nonNullable: true }),
       qte: new FormControl<number | null>(qte, { validators: [Validators.required, Validators.min(0)] }),
       pu: new FormControl<number | null>(pu, { validators: [Validators.required, Validators.min(0)] }),
@@ -130,8 +134,8 @@ export class CahierComponent implements OnInit {
         changed = true;
       }
 
-      // Dropdown selection (dnPrefix + dnNumber) should only apply to 'Chargement' type
-      if (this.operationForm.value.type === 'Chargement') {
+      // Dropdown selection (dnPrefix + dnNumber) should only apply to 'Chargement' or 'Chargement des wagons' type
+      if (this.operationForm.value.type === 'Chargement' || this.operationForm.value.type === 'Chargement des wagons') {
         const rawNum = (v.dnNumber || '').toString().trim();
         const calculatedDn = `${v.dnPrefix || 'DN'} ${rawNum}`.toUpperCase().trim();
         if (group.controls['dn'].value !== calculatedDn) {
@@ -151,7 +155,8 @@ export class CahierComponent implements OnInit {
 
   addItemRow() {
     const opDate = this.operationForm.controls.date.value || new Date().toISOString().split('T')[0];
-    const group = this.createItemFormGroup(opDate);
+    const defaultProduct = this.operationForm.controls.produit.value || '';
+    const group = this.createItemFormGroup(opDate, '', defaultProduct);
     this.itemsFormArray.push(group);
     
     // Auto-calculate montant if they want, but let's keep direct input and listen to value changes to update signal
@@ -297,6 +302,29 @@ export class CahierComponent implements OnInit {
     return val.items.reduce((sum: number, item: Partial<ChargementItem>) => sum + (Number(item?.montant) || 0), 0);
   });
 
+  // Calculate instant total of quantities (Tonnage / sacs)
+  readonly totalQuantite = computed<number>(() => {
+    const val = this.formValue();
+    if (!val.items || !Array.isArray(val.items)) return 0;
+    return val.items.reduce((sum: number, item: Partial<ChargementItem>) => sum + (Number(item?.qte) || 0), 0);
+  });
+
+  readonly tableColspan = computed<number>(() => {
+    const val = this.formValue();
+    if (val.type === 'Chargement des wagons') {
+      return val.produit === 'Blé' ? 6 : 5;
+    }
+    return val.type === 'Chargement' ? 7 : 6;
+  });
+
+  readonly totalColspan = computed<number>(() => {
+    const val = this.formValue();
+    if (val.type === 'Chargement des wagons') {
+      return val.produit === 'Blé' ? 4 : 3;
+    }
+    return val.type === 'Chargement' ? 5 : 4;
+  });
+
   getOperationTotal(op: Operation): number {
     if (!op || !op.items || !Array.isArray(op.items)) return 0;
     return op.items.reduce((sum: number, item: ChargementItem) => sum + (Number(item?.montant) || 0), 0);
@@ -412,6 +440,13 @@ export class CahierComponent implements OnInit {
 
   selectType(typeOption: string) {
     this.operationForm.patchValue({ type: typeOption });
+    if (typeOption !== 'Chargement des wagons') {
+      this.goToStep3();
+    }
+  }
+
+  selectWagonProduct(product: string) {
+    this.operationForm.patchValue({ produit: product });
     this.goToStep3();
   }
 
@@ -441,7 +476,8 @@ export class CahierComponent implements OnInit {
       // Ensure at least one line is present when opening the step 3 form
       if (this.itemsFormArray.length === 0) {
         const opDate = this.operationForm.controls.date.value || new Date().toISOString().split('T')[0];
-        this.itemsFormArray.push(this.createItemFormGroup(opDate));
+        const defaultProduct = this.operationForm.controls.produit.value || '';
+        this.itemsFormArray.push(this.createItemFormGroup(opDate, '', defaultProduct));
       }
 
       this.currentStep.set(3);
