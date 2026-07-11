@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } fr
 import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CahierService } from '../../../core/services/cahier.service';
+import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { Operation, MonthlySummary, ChargementItem } from '../../../shared/models/cahier.model';
 
 interface OperationFormValue {
@@ -29,6 +30,7 @@ interface OperationFormValue {
 })
 export class CahierComponent implements OnInit {
   readonly cahierService = inject(CahierService);
+  private readonly pdfService = inject(PdfExportService);
   private readonly destroyRef = inject(DestroyRef);
 
   // UI state signals
@@ -37,6 +39,7 @@ export class CahierComponent implements OnInit {
   readonly selectedSummary = signal<MonthlySummary | null>(null);
   readonly activeDraftId = signal<string | null>(null);
   readonly globalDnPrefix = signal<string>('DN');
+  readonly isEditingRegistered = signal<boolean>(false);
 
   // Available options
   readonly sites = ['SCMC', 'TUSCANI', 'AFISA', 'AUTRE'];
@@ -332,6 +335,7 @@ export class CahierComponent implements OnInit {
 
   // Opens the creation page view
   openNewOperationModal() {
+    this.isEditingRegistered.set(false);
     this.itemsFormArray.clear();
     this.activeDraftId.set(null);
     this.operationForm.reset({
@@ -352,6 +356,7 @@ export class CahierComponent implements OnInit {
 
   // Opens form from an existing draft
   editDraft(draft: Operation) {
+    this.isEditingRegistered.set(false);
     this.itemsFormArray.clear();
     this.activeDraftId.set(draft.id);
     
@@ -370,6 +375,42 @@ export class CahierComponent implements OnInit {
 
     if (draft.items && draft.items.length > 0) {
       draft.items.forEach(item => {
+        this.itemsFormArray.push(this.createItemFormGroup(
+          item.date,
+          item.dn,
+          item.produit,
+          item.qte,
+          item.pu,
+          item.montant
+        ));
+      });
+    }
+
+    this.currentStep.set(3); // Go directly to detailed stage
+    this.isCreationPageOpen.set(true);
+  }
+
+  // Opens form from an existing registered operation
+  editOperation(op: Operation) {
+    this.isEditingRegistered.set(true);
+    this.itemsFormArray.clear();
+    this.activeDraftId.set(op.id);
+    
+    this.operationForm.patchValue({
+      site: op.site,
+      type: op.type,
+      date: op.date,
+      heure: op.heure,
+      quantite: op.quantite !== undefined ? op.quantite : null,
+      produit: op.produit || '',
+      destination: op.destination || '',
+      sonLevel: op.sonLevel || 'Moyen',
+      frequence: op.frequence || 'Basse',
+      details: op.details || ''
+    });
+
+    if (op.items && op.items.length > 0) {
+      op.items.forEach(item => {
         this.itemsFormArray.push(this.createItemFormGroup(
           item.date,
           item.dn,
@@ -412,9 +453,35 @@ export class CahierComponent implements OnInit {
 
     await this.cahierService.saveDraft(draftData);
     this.isCreationPageOpen.set(false);
+
+    // Si on a sauvegardé une opération enregistrée sous forme de brouillon, on doit la retirer du sommaire mensuel affiché
+    if (this.selectedSummary() && this.activeDraftId()) {
+      const activeSum = this.selectedSummary()!;
+      const updatedOps = activeSum.operations.filter(op => op.id !== this.activeDraftId());
+      if (updatedOps.length > 0) {
+        this.selectedSummary.set({
+          ...activeSum,
+          count: updatedOps.length,
+          operations: updatedOps
+        });
+      } else {
+        this.selectedSummary.set(null);
+      }
+    }
   }
 
   async closeModal() {
+    if (this.isEditingRegistered()) {
+      if (this.operationForm.dirty) {
+        // Si l'utilisateur a fait des modifications sur le formulaire/tableau d'une opération déjà enregistrée 
+        // mais qu'il ferme sans enregistrer les modifications, le tableau repart automatiquement en brouillon.
+        await this.saveAsDraft();
+        return;
+      }
+      this.isCreationPageOpen.set(false);
+      return;
+    }
+
     // Check if the table has actual data filled in
     const hasTableData = this.itemsFormArray.controls.some(group => {
       const v = group.value;
@@ -567,6 +634,11 @@ export class CahierComponent implements OnInit {
     }
   }
 
+  // Exports an operation to PDF format using the PDF export service
+  exportToPdf(op: Operation) {
+    this.pdfService.exportOperationToPdf(op);
+  }
+
   // Set detailed summary view
   showDetail(summary: MonthlySummary) {
     this.selectedSummary.set(summary);
@@ -616,284 +688,5 @@ export class CahierComponent implements OnInit {
       }));
   });
 
-  // Export the operations to an Excel-compatible CSV file
-  exportToExcel() {
-    const summary = this.selectedSummary();
-    if (!summary) return;
-
-    const csvRows: string[] = [];
-    
-    // UTF-8 BOM so Excel opens it with correct French accents
-    csvRows.push('\ufeff');
-
-    // Document Headers
-    csvRows.push(`"RAPPORT D'OPERATIONS - ${summary.type.toUpperCase()}"`);
-    csvRows.push(`"Site","${summary.site}"`);
-    csvRows.push(`"Periode","${summary.month}"`);
-    csvRows.push(`"Nombre d'operations","${summary.count}"`);
-    csvRows.push(''); // Empty line separator
-
-    // Table Headers
-    csvRows.push('"Date","Heure","DN","Produit","Quantite","PU","Montant (FCFA)","Observations","Collaborateur"');
-
-    // Process operations by date
-    this.detailedDays().forEach(dayGroup => {
-      dayGroup.ops.forEach(op => {
-        if (op.items && op.items.length > 0) {
-          op.items.forEach(item => {
-            const row = [
-              `"${item.date}"`,
-              `"${op.heure}"`,
-              `"${item.dn}"`,
-              `"${item.produit}"`,
-              `"${item.qte}"`,
-              `"${item.pu}"`,
-              `"${item.montant}"`,
-              `"${(op.details || '').replace(/"/g, '""')}"`,
-              `"${op.collaborateur || ''}"`
-            ];
-            csvRows.push(row.join(','));
-          });
-        } else {
-          const row = [
-            `"${op.date}"`,
-            `"${op.heure}"`,
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            `"${(op.details || '').replace(/"/g, '""')}"`,
-            `"${op.collaborateur || ''}"`
-          ];
-          csvRows.push(row.join(','));
-        }
-      });
-    });
-
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Rapport_Operations_${summary.site}_${summary.type}_${summary.month.replace(/\s+/g, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  // Export the operations to a beautifully styled print view / PDF
-  exportToPDF() {
-    const summary = this.selectedSummary();
-    if (!summary) return;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert('Veuillez autoriser les fenêtres contextuelles pour exporter le rapport en PDF.');
-      return;
-    }
-
-    const title = `Rapport d'Opérations - ${summary.type} (${summary.site})`;
-    
-    let rowsHtml = '';
-    this.detailedDays().forEach(dayGroup => {
-      dayGroup.ops.forEach(op => {
-        const items = op.items;
-        if (items && items.length > 0) {
-          const len = items.length;
-          items.forEach((item, index) => {
-            rowsHtml += `
-              <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-                ${index === 0 ? `<td rowspan="${len}" style="padding: 8px; border-right: 1px solid #e2e8f0; font-weight: bold; vertical-align: top;">${dayGroup.dateLabel}<br><small style="color: #64748b; font-weight: normal;">${op.heure}</small></td>` : ''}
-                <td style="padding: 8px; border-right: 1px solid #e2e8f0; text-align: center;">${item.dn}</td>
-                <td style="padding: 8px; border-right: 1px solid #e2e8f0;">${item.produit}</td>
-                <td style="padding: 8px; border-right: 1px solid #e2e8f0; text-align: right;">${Number(item.qte).toLocaleString('fr-FR')}</td>
-                <td style="padding: 8px; border-right: 1px solid #e2e8f0; text-align: right;">${Number(item.pu).toLocaleString('fr-FR')}</td>
-                <td style="padding: 8px; border-right: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #4f46e5;">${Number(item.montant).toLocaleString('fr-FR')} FCFA</td>
-                ${index === 0 ? `<td rowspan="${len}" style="padding: 8px; border-right: 1px solid #e2e8f0; color: #475569; vertical-align: top;">${op.details || '-'}</td>` : ''}
-                ${index === 0 ? `<td rowspan="${len}" style="padding: 8px; color: #475569; vertical-align: top;">${op.collaborateur || '-'}</td>` : ''}
-              </tr>
-            `;
-          });
-        } else {
-          rowsHtml += `
-            <tr style="border-bottom: 1px solid #e2e8f0; font-size: 11px;">
-              <td style="padding: 8px; border-right: 1px solid #e2e8f0; font-weight: bold; vertical-align: top;">${dayGroup.dateLabel}<br><small style="color: #64748b; font-weight: normal;">${op.heure}</small></td>
-              <td style="padding: 8px; border-right: 1px solid #e2e8f0; text-align: center;" colspan="5">Aucun article enregistré</td>
-              <td style="padding: 8px; border-right: 1px solid #e2e8f0; color: #475569; vertical-align: top;">${op.details || '-'}</td>
-              <td style="padding: 8px; color: #475569; vertical-align: top;">${op.collaborateur || '-'}</td>
-            </tr>
-          `;
-        }
-      });
-    });
-
-    let grandTotal = 0;
-    this.detailedDays().forEach(dayGroup => {
-      dayGroup.ops.forEach(op => {
-        grandTotal += this.getOperationTotal(op);
-      });
-    });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>${title}</title>
-        <meta charset="utf-8">
-        <style>
-          body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            color: #1e293b;
-            margin: 40px;
-            line-height: 1.5;
-          }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #4f46e5;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-          }
-          .header-title h1 {
-            font-size: 20px;
-            font-weight: 800;
-            margin: 0 0 5px 0;
-            color: #0f172a;
-            letter-spacing: -0.025em;
-          }
-          .header-title p {
-            margin: 0;
-            font-size: 12px;
-            color: #64748b;
-          }
-          .meta-box {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px 20px;
-            font-size: 12px;
-          }
-          .meta-item {
-            margin-bottom: 4px;
-          }
-          .meta-item:last-child {
-            margin-bottom: 0;
-          }
-          .meta-label {
-            font-weight: bold;
-            color: #64748b;
-            margin-right: 5px;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-          }
-          th {
-            background-color: #f1f5f9;
-            color: #475569;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 10px 8px;
-            border: 1px solid #e2e8f0;
-            text-align: left;
-          }
-          td {
-            border: 1px solid #e2e8f0;
-          }
-          .total-section {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 20px;
-          }
-          .total-box {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 15px 25px;
-            font-size: 14px;
-            font-weight: bold;
-          }
-          .total-label {
-            color: #64748b;
-            margin-right: 15px;
-          }
-          .total-val {
-            color: #4f46e5;
-            font-size: 16px;
-          }
-          .footer {
-            margin-top: 50px;
-            border-top: 1px solid #e2e8f0;
-            padding-top: 15px;
-            text-align: center;
-            font-size: 10px;
-            color: #94a3b8;
-          }
-          @media print {
-            body {
-              margin: 20px;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="header-title">
-            <h1>RAPPORT JOURNALIER D'OPÉRATIONS</h1>
-            <p>Saisie et suivi des activités d'exploitation SCMC</p>
-          </div>
-          <div class="meta-box">
-            <div class="meta-item"><span class="meta-label">Site :</span> ${summary.site}</div>
-            <div class="meta-item"><span class="meta-label">Type :</span> ${summary.type}</div>
-            <div class="meta-item"><span class="meta-label">Période :</span> ${summary.month}</div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 15%;">Date & Heure</th>
-              <th style="width: 10%; text-align: center;">DN</th>
-              <th style="width: 18%;">Produit</th>
-              <th style="width: 10%; text-align: right;">Qté</th>
-              <th style="width: 10%; text-align: right;">PU</th>
-              <th style="width: 15%; text-align: right;">Montant</th>
-              <th style="width: 20%;">Observations</th>
-              <th style="width: 12%;">Collaborateur</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-
-        <div class="total-section">
-          <div class="total-box">
-            <span class="total-label">Montant Global :</span>
-            <span class="total-val">${grandTotal.toLocaleString('fr-FR')} FCFA</span>
-          </div>
-        </div>
-
-        <div class="footer">
-          Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')} | SCMC Operations Digitales
-        </div>
-
-        <script>
-          window.onload = function() {
-            window.print();
-          };
-        </script>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-  }
 }
 

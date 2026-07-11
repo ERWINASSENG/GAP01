@@ -416,15 +416,6 @@
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 ml-auto">
                 <button 
                   type="button" 
-                  (click)="saveAsDraft()"
-                  class="px-2 py-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-white text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-xs hover:shadow-sm border border-transparent shrink-0"
-                >
-                  <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">assignment</mat-icon>
-                  <span class="hidden sm:inline">Enregistrer Brouillon</span>
-                  <span class="sm:hidden">Brouillon</span>
-                </button>
-                <button 
-                  type="button" 
                   (click)="onSubmit()"
                   [disabled]="operationForm.invalid"
                   class="px-2 py-2 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:border-slate-200 dark:disabled:border-slate-700/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:shadow-md border border-transparent shrink-0"
@@ -615,50 +606,20 @@
     } @else {
       <!-- 2. VUE DÉTAILLÉE PAR SEMAINE / JOUR -->
       <div class="space-y-6" id="detailed-view-container">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs" id="detailed-header">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" id="detailed-header">
           <div class="flex items-center gap-3">
             <button 
               (click)="backToMonthly()"
-              class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
+              class="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
               aria-label="Retourner à la vue mensuelle"
             >
-              <mat-icon>arrow_back</mat-icon>
+              <mat-icon class="!text-[16px] !h-4 !w-4">arrow_back</mat-icon>
             </button>
             <div>
-              <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                <span>Vue détaillée</span>
-                <span>•</span>
-                <span>{{ selectedSummary()?.month }}</span>
-              </div>
-              <h2 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                {{ selectedSummary()?.type }} — Site {{ selectedSummary()?.site }}
+              <h2 class="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                LISTE DES MOUVEMENTS ENREGISTRÉS
               </h2>
             </div>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
-              <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center text-slate-400">equalizer</mat-icon>
-              Total : {{ selectedSummary()?.count }} opération(s)
-            </div>
-
-            <!-- Boutons d'exportation -->
-            <button 
-              (click)="exportToExcel()"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-lg border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer focus:outline-hidden"
-              title="Exporter vers Excel"
-            >
-              <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">grid_on</mat-icon>
-              <span>Excel</span>
-            </button>
-
-            <button 
-              (click)="exportToPDF()"
-              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-lg border border-rose-200 dark:border-rose-800 transition-all cursor-pointer focus:outline-hidden"
-              title="Exporter vers PDF"
-            >
-              <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">picture_as_pdf</mat-icon>
-              <span>PDF</span>
-            </button>
           </div>
         </div>
 
@@ -682,12 +643,11 @@
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') ? 10 : 9">
-                        LISTE DES MOUVEMENTS ENREGISTRÉS
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') ? 7 : 6">
+                        {{ selectedSummary()?.type }} — Site {{ selectedSummary()?.site }}
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
-                      <th class="px-2 py-2 sm:px-4 sm:py-3 w-20 border border-slate-300 dark:border-slate-700 text-center">Heure</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
                       @if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') {
                         <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
@@ -696,8 +656,6 @@
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Qte</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Montant</th>
-                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Détails</th>
-                      <th class="px-2 py-2 sm:px-4 sm:py-3 w-48 border border-slate-300 dark:border-slate-700 text-center">Collaborateur</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 w-16 text-center border border-slate-300 dark:border-slate-700">Actions</th>
                     </tr>
                   </thead>
@@ -705,11 +663,6 @@
                     @for (op of dayGroup.ops; track op.id) {
                       @for (item of op.items; track $index; let idx = $index; let len = $count) {
                         <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800">
-                          @if (idx === 0) {
-                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 font-mono font-semibold text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 text-center align-middle bg-slate-50/50 dark:bg-slate-950/20">
-                              {{ op.heure }}
-                            </td>
-                          }
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
@@ -731,25 +684,30 @@
                             {{ item.montant | number }}
                           </td>
                           @if (idx === 0) {
-                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-slate-500 dark:text-slate-400 max-w-xs truncate border border-slate-300 dark:border-slate-700 align-middle text-center" [title]="op.details || ''">
-                              {{ op.details || '-' }}
-                            </td>
-                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 align-middle text-center">
-                              <div class="flex items-center gap-2 justify-center">
-                                <div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                                  {{ op.collaborateur?.charAt(0) || 'C' }}
-                                </div>
-                                <span class="text-xs text-slate-600 dark:text-slate-300 truncate max-w-[120px]">{{ op.collaborateur }}</span>
-                              </div>
-                            </td>
                             <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle">
-                              <button 
-                                (click)="deleteOp(op.id)"
-                                class="p-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center"
-                                title="Supprimer cette opération"
-                              >
-                                <mat-icon class="text-sm">delete</mat-icon>
-                              </button>
+                              <div class="flex items-center gap-2 justify-center">
+                                <button 
+                                  (click)="exportToPdf(op)"
+                                  class="p-1 h-8 w-8 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-emerald-200 dark:border-emerald-800/60 bg-emerald-500/5"
+                                  title="Exporter cette opération en PDF"
+                                >
+                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">picture_as_pdf</mat-icon>
+                                </button>
+                                <button 
+                                  (click)="editOperation(op)"
+                                  class="p-1 h-8 w-8 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-amber-200 dark:border-amber-800/60 bg-amber-500/5"
+                                  title="Modifier cette opération"
+                                >
+                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">edit</mat-icon>
+                                </button>
+                                <button 
+                                  (click)="deleteOp(op.id)"
+                                  class="p-1 h-8 w-8 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-rose-200 dark:border-rose-800/60 bg-rose-500/5"
+                                  title="Supprimer cette opération"
+                                >
+                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">delete</mat-icon>
+                                </button>
+                              </div>
                             </td>
                           }
                         </tr>
