@@ -1,0 +1,644 @@
+<div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6" id="cahier-page-container">
+
+  @if (isCreationPageOpen()) {
+    <!-- VUE DE CRÉATION SUR UNE PAGE COMPLÈTE -->
+    <div class="-mt-2 sm:-mt-4 lg:-mt-6 space-y-4 animate-fade-in" id="creation-page-container">
+      
+      <!-- En-tête de la page de création -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3" id="creation-header">
+        <div class="flex items-center gap-2.5">
+          <button 
+            (click)="closeModal()"
+            class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
+            aria-label="Retourner à la liste"
+          >
+            <mat-icon class="!text-[18px] !h-4.5 !w-4.5 flex items-center justify-center">arrow_back</mat-icon>
+          </button>
+          <div>
+            <h1 class="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+              Nouvelle Opération
+            </h1>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout du formulaire : Pleine largeur suite à la suppression du panneau de progression -->
+      <div class="w-full" id="creation-main-grid">
+        
+        <!-- Panneau principal : Contenu du formulaire -->
+        <div [ngClass]="{
+          'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 md:p-8 shadow-xs': currentStep() !== 3,
+          'bg-transparent border-0 p-0 shadow-none': currentStep() === 3
+        }" class="animate-fade-in" id="wizard-right-panel">
+          <form [formGroup]="operationForm" (ngSubmit)="onSubmit()" class="space-y-6">
+            
+            <!-- STEP 1: SITE SELECTION -->
+            @if (currentStep() === 1) {
+              <div class="animate-slide-in" id="step-1-content">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider shrink-0">
+                    Sélection du Site d'intervention
+                  </h4>
+                  <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                    @for (siteOption of sites; track siteOption) {
+                      <button 
+                        type="button"
+                        (click)="selectSite(siteOption)"
+                        class="flex-1 md:flex-initial px-3 py-2 sm:px-4 sm:py-2.5 border rounded-xl font-semibold text-xs sm:text-sm text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        [ngClass]="{
+                          'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-500/60 dark:text-indigo-300 ring-2 ring-indigo-500/20': operationForm.value.site === siteOption,
+                          'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300': operationForm.value.site !== siteOption
+                        }">
+                        <mat-icon class="text-slate-400 !text-[16px] !h-4 !w-4 flex items-center justify-center">place</mat-icon>
+                        <span>{{ siteOption }}</span>
+                        @if (operationForm.value.site === siteOption) {
+                          <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-[14px] !h-3.5 !w-3.5 flex items-center justify-center">check_circle</mat-icon>
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- STEP 2: OPERATION TYPE SELECTION -->
+            @if (currentStep() === 2) {
+              <div class="animate-slide-in" id="step-2-content">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider shrink-0">
+                    Choix du Type d'opération
+                  </h4>
+                  <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full md:w-auto">
+                    @for (typeOption of operationTypes; track typeOption) {
+                      <button 
+                        type="button"
+                        (click)="selectType(typeOption)"
+                        class="flex-1 md:flex-initial px-3 py-2 sm:px-4 sm:py-2.5 border rounded-xl font-semibold text-xs sm:text-sm text-center transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs hover:shadow-md border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        [ngClass]="{
+                          'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/40 dark:border-indigo-500/60 dark:text-indigo-300 ring-2 ring-indigo-500/20': operationForm.value.type === typeOption,
+                          'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300': operationForm.value.type !== typeOption
+                        }">
+                        <mat-icon class="text-slate-400 !text-[16px] !h-4 !w-4 flex items-center justify-center">
+                          {{ 
+                            typeOption === 'Chargement' ? 'unarchive' :
+                            typeOption === 'Déchargement' ? 'archive' :
+                            typeOption === 'Surmontage' ? 'layers' :
+                            typeOption === 'Transfert' ? 'local_shipping' : 'volume_up'
+                          }}
+                        </mat-icon>
+                        <span>{{ typeOption }}</span>
+                        @if (operationForm.value.type === typeOption) {
+                          <mat-icon class="text-indigo-600 dark:text-indigo-400 !text-[14px] !h-3.5 !w-3.5 flex items-center justify-center">check_circle</mat-icon>
+                        }
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- STEP 3: FORM DETAILS + LIVE PREVIEW -->
+            @if (currentStep() === 3) {
+              <div class="space-y-6 animate-slide-in" id="step-3-content">
+
+                <!-- Dynamic Items Table -->
+                <div class="space-y-4" id="operation-table-section">
+                  <div class="flex items-center justify-end">
+                    <button 
+                      type="button"
+                      (click)="addItemRow()"
+                      class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold rounded-xl transition-all cursor-pointer border border-indigo-200/50 dark:border-indigo-800/40 focus:outline-hidden"
+                    >
+                      <mat-icon class="text-xs leading-none h-3.5 w-3.5">add</mat-icon>
+                      <span>Ajouter une ligne</span>
+                    </button>
+                  </div>
+                <!-- Dynamic Table inside Form with horizontal scrolling wrapper for mobile responsive display -->
+                <div class="overflow-x-auto w-full border border-black rounded-lg">
+                  <table class="table-scmc min-w-[850px] w-full text-center">
+                    <thead>
+                      <!-- Table Title Row matching the screenshot -->
+                      <tr class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-bold uppercase tracking-wider text-center text-sm">
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" colspan="7">
+                          {{ (operationForm.value.type || 'Chargement') | uppercase }} {{ (operationForm.value.site || 'SCMC') | uppercase }}
+                        </th>
+                      </tr>
+                      <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-36 border border-slate-300 dark:border-slate-700 text-center">DATE</th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
+                          @if (operationForm.value.type === 'Chargement') {
+                            <div class="flex items-center justify-center">
+                              <select 
+                                [value]="globalDnPrefix()"
+                                (change)="onGlobalPrefixChange($any($event.target).value)"
+                                class="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                              >
+                                <option value="DN">DN</option>
+                                <option value="LTI">LTI</option>
+                                <option value="ISTI">ISTI</option>
+                              </select>
+                            </div>
+                          } @else {
+                            <span>DN / RÉFÉRENCE</span>
+                          }
+                        </th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">PRODUIT</th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-24 border border-slate-300 dark:border-slate-700 text-center">QTE</th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">PU (FCFA)</th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-32 border border-slate-300 dark:border-slate-700 text-center">MONTANT (FCFA)</th>
+                        <th class="py-3 px-3 sm:py-3 sm:px-4 w-12 border border-slate-300 dark:border-slate-700 text-center"></th>
+                      </tr>
+                    </thead>
+                    <tbody formArrayName="items">
+                      @for (itemGroup of itemsFormArray.controls; track itemGroup) {
+                        <tr [formGroupName]="$index" class="hover:bg-slate-100/10 dark:hover:bg-slate-800/10 transition-all">
+                          <!-- Date Input -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            <input 
+                              type="date" 
+                              formControlName="date"
+                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                            />
+                          </td>
+                          <!-- DN Input (Dropdown Prefix + Number or single input based on type) -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            @if (operationForm.value.type === 'Chargement') {
+                              <div class="flex items-center gap-2 justify-center">
+                                <span class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500 dark:text-slate-400 uppercase select-none">
+                                  {{ itemGroup.get('dnPrefix')?.value || 'DN' }}
+                                </span>
+                                <input 
+                                  type="text" 
+                                  formControlName="dnNumber"
+                                  placeholder="0001"
+                                  class="w-full max-w-[100px] px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm uppercase text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                />
+                              </div>
+                            } @else {
+                              <input 
+                                type="text" 
+                                formControlName="dn"
+                                placeholder="ex. DN-591"
+                                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                              />
+                            }
+                          </td>
+                          <!-- Produit Input -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            <input 
+                              type="text" 
+                              formControlName="produit"
+                              placeholder="ex. Ciment"
+                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                            />
+                          </td>
+                          <!-- Qte Input -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            <input 
+                              type="number" 
+                              formControlName="qte"
+                              placeholder="ex. 100"
+                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                            />
+                          </td>
+                          <!-- PU Input -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            <input 
+                              type="number" 
+                              formControlName="pu"
+                              placeholder="ex. 5000"
+                              class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                            />
+                          </td>
+                                                 <!-- Montant Input -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
+                            <input 
+                              type="number" 
+                              formControlName="montant"
+                              placeholder="ex. 500000"
+                              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm font-mono text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                              readonly
+                              title="Calculé automatiquement (QTE * PU)"
+                            />
+                          </td>
+                          <!-- Delete Row Btn -->
+                          <td class="py-3 px-3 sm:py-3 sm:px-3 text-center border border-slate-300 dark:border-slate-700">
+                            @if (itemsFormArray.length > 1) {
+                              <button 
+                                type="button" 
+                                (click)="removeItemRow($index)"
+                                class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer inline-flex items-center justify-center focus:outline-hidden"
+                                title="Supprimer cette ligne"
+                              >
+                                <mat-icon class="text-base">close</mat-icon>
+                              </button>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                    <tfoot>
+                      <tr class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-900 dark:text-white">
+                        <td colspan="5" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
+                        <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                          {{ totalChargement() | number }}
+                        </td>
+                        <td class="border border-slate-300 dark:border-slate-700"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                </div>
+              </div>
+            }
+
+          </form>
+
+          <!-- Buttons Actions -->
+          <div [ngClass]="{
+            'mt-6 pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4': currentStep() !== 3,
+            'mt-8 pt-5 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 sm:gap-4': currentStep() === 3
+          }" id="wizard-actions">
+            @if (currentStep() === 1) {
+              <button 
+                type="button" 
+                (click)="closeModal()"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+              >
+                Annuler
+              </button>
+              <div></div>
+            } @else if (currentStep() === 2) {
+              <button 
+                type="button" 
+                (click)="currentStep.set(1)"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
+              >
+                <mat-icon class="text-sm leading-none h-4 w-4">arrow_back</mat-icon>
+                <span>Précédent</span>
+              </button>
+              <div></div>
+            } @else {
+              <button 
+                type="button" 
+                (click)="currentStep.set(2)"
+                class="px-2 py-2 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-xs hover:shadow-sm shrink-0"
+              >
+                <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">arrow_back</mat-icon>
+                <span class="hidden sm:inline">Précédent</span>
+              </button>
+              <div class="flex flex-wrap items-center gap-1 sm:gap-2 ml-auto">
+                <button 
+                  type="button" 
+                  (click)="saveAsDraft()"
+                  class="px-2 py-2 sm:px-3 sm:py-2 bg-amber-500 hover:bg-amber-600 text-white text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-xs hover:shadow-sm border border-transparent shrink-0"
+                >
+                  <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">assignment</mat-icon>
+                  <span class="hidden sm:inline">Enregistrer Brouillon</span>
+                  <span class="sm:hidden">Brouillon</span>
+                </button>
+                <button 
+                  type="button" 
+                  (click)="onSubmit()"
+                  [disabled]="operationForm.invalid"
+                  class="px-2 py-2 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:border-slate-200 dark:disabled:border-slate-700/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:shadow-md border border-transparent shrink-0"
+                >
+                  <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">check_circle</mat-icon>
+                  <span>Enregistrer</span>
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+  } @else {
+    <!-- VUE CLASSIQUE : EN-TÊTE + TABLEAU MENSUEL / DÉTAILLÉ -->
+    <!-- En-tête de page -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-5" id="cahier-header">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight" id="cahier-title">
+          Cahier d'Opérations
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1" id="cahier-subtitle">
+          Suivi mensuel et enregistrement quotidien des mouvements.
+        </p>
+      </div>
+      
+      <button 
+        (click)="openNewOperationModal()"
+        class="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-sm font-semibold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md focus:outline-hidden"
+        id="btn-new-operation"
+      >
+        <mat-icon class="text-sm leading-none h-4 w-4">add</mat-icon>
+        <span>Nouvelle opération</span>
+      </button>
+    </div>
+
+    <!-- MAIN VUE SWITCHER -->
+    @if (!selectedSummary()) {
+      <!-- 1. VUE MENSUELLE (Cahier d'Opérations principal) -->
+      <div class="space-y-4" id="monthly-view-container">
+
+        <!-- BROUILLONS EN COURS -->
+        @if (cahierService.drafts().length > 0) {
+          <div class="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 sm:p-5 space-y-3" id="drafts-section">
+            <div class="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-sm">
+              <mat-icon class="!text-[18px] !h-4.5 !w-4.5 flex items-center justify-center">edit_note</mat-icon>
+              <span>Brouillons en cours ({{ cahierService.drafts().length }})</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              @for (draft of cahierService.drafts(); track draft.id) {
+                <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-xs flex flex-col justify-between hover:shadow-md transition-all gap-3">
+                  <div class="space-y-1">
+                    <div class="flex justify-between items-start gap-2">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                        <mat-icon class="!text-[12px] !h-3 !w-3 flex items-center justify-center text-slate-400">place</mat-icon>
+                        {{ draft.site || 'Site non défini' }}
+                      </span>
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        Brouillon
+                      </span>
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mt-2">
+                      <mat-icon class="!text-[14px] !h-3.5 !w-3.5 flex items-center justify-center text-slate-400">
+                        {{ 
+                          draft.type === 'Chargement' ? 'unarchive' :
+                          draft.type === 'Déchargement' ? 'archive' :
+                          draft.type === 'Surmontage' ? 'layers' :
+                          draft.type === 'Transfert' ? 'local_shipping' : 'volume_up'
+                        }}
+                      </mat-icon>
+                      {{ draft.type || 'Type non défini' }}
+                    </h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                      Date : {{ draft.date }} • {{ draft.heure }}
+                    </p>
+                    @if (draft.items && draft.items.length > 0) {
+                      <p class="text-xs text-slate-600 dark:text-slate-300">
+                        {{ draft.items.length }} ligne(s) d'articles
+                      </p>
+                    }
+                  </div>
+                  <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-1">
+                    <button 
+                      (click)="cahierService.deleteOperation(draft.id)"
+                      class="p-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center"
+                      title="Supprimer ce brouillon"
+                    >
+                      <mat-icon class="!text-[16px] !h-4 !w-4">delete</mat-icon>
+                    </button>
+                    <button 
+                      (click)="editDraft(draft)"
+                      class="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer shadow-xs hover:shadow-sm"
+                    >
+                      <span>Reprendre</span>
+                      <mat-icon class="!text-[12px] !h-3.5 !w-3.5 flex items-center justify-center">chevron_right</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-between" id="monthly-header">
+          <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <mat-icon class="text-slate-500 dark:text-slate-400">calendar_month</mat-icon>
+            Synthèse Mensuelle Globale
+          </h2>
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            {{ cahierService.monthlySummaries().length }} regroupement(s) actif(s)
+          </span>
+        </div>
+
+        @if (cahierService.monthlySummaries().length === 0) {
+          <div class="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center shadow-xs transition-all" id="empty-monthly-state">
+            <mat-icon class="text-slate-300 dark:text-slate-700 text-5xl mb-3">menu_book</mat-icon>
+            <p class="text-slate-800 dark:text-slate-200 font-semibold">Aucune opération enregistrée</p>
+            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-sm mx-auto">
+              Commencez par ajouter votre première opération journalière à l'aide du bouton ci-dessus.
+            </p>
+          </div>
+        } @else {
+          <!-- Tableau Mensuel Synthétique -->
+          <div class="overflow-x-auto rounded-xl">
+            <table class="w-full text-left border-collapse border border-slate-300 dark:border-slate-700 text-xs sm:text-sm block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
+              <thead>
+                <!-- Top Header Row -->
+                <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold tracking-wider uppercase">
+                  <th class="px-6 py-3 text-center border border-slate-300 dark:border-slate-700" colspan="5">
+                    SYNTHÈSE MENSUELLE GLOBALE DES OPÉRATIONS
+                  </th>
+                </tr>
+                <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
+                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Mois / Période</th>
+                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Site d'Opération</th>
+                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Type de Service</th>
+                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Opérations enregistrées</th>
+                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700 text-right">Détails</th>
+                </tr>
+              </thead>
+              <tbody class="text-slate-700 dark:text-slate-200">
+                @for (summary of cahierService.monthlySummaries(); track $index) {
+                  <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-all border-b border-slate-300 dark:border-slate-700">
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                      {{ summary.month }}
+                    </td>
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50">
+                        <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center text-slate-400 dark:text-slate-500">place</mat-icon>
+                        {{ summary.site }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border"
+                        [ngClass]="{
+                          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20': summary.type === 'Chargement',
+                          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20': summary.type === 'Déchargement',
+                          'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20': summary.type === 'Surmontage',
+                          'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20': summary.type === 'Transfert',
+                          'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20': summary.type === 'Son'
+                        }">
+                        <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center">
+                          {{ 
+                            summary.type === 'Chargement' ? 'unarchive' :
+                            summary.type === 'Déchargement' ? 'archive' :
+                            summary.type === 'Surmontage' ? 'layers' :
+                            summary.type === 'Transfert' ? 'local_shipping' : 'volume_up'
+                          }}
+                        </mat-icon>
+                        {{ summary.type }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
+                      <span class="font-mono font-bold text-slate-900 dark:text-white">{{ summary.count }}</span>
+                      <span class="text-slate-400 dark:text-slate-500 text-xs ml-1">opération(s)</span>
+                    </td>
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700 text-right">
+                      <button 
+                        (click)="showDetail(summary)"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                      >
+                        <span>Voir détail</span>
+                        <mat-icon class="text-xs leading-none h-3.5 w-3.5">arrow_forward</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    } @else {
+      <!-- 2. VUE DÉTAILLÉE PAR SEMAINE / JOUR -->
+      <div class="space-y-6" id="detailed-view-container">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-900 p-5 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs" id="detailed-header">
+          <div class="flex items-center gap-3">
+            <button 
+              (click)="backToMonthly()"
+              class="p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
+              aria-label="Retourner à la vue mensuelle"
+            >
+              <mat-icon>arrow_back</mat-icon>
+            </button>
+            <div>
+              <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                <span>Vue détaillée</span>
+                <span>•</span>
+                <span>{{ selectedSummary()?.month }}</span>
+              </div>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                {{ selectedSummary()?.type }} — Site {{ selectedSummary()?.site }}
+              </h2>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2 font-mono text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-slate-800/50">
+              <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center text-slate-400">equalizer</mat-icon>
+              Total : {{ selectedSummary()?.count }} opération(s)
+            </div>
+
+            <!-- Boutons d'exportation -->
+            <button 
+              (click)="exportToExcel()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-lg border border-emerald-200 dark:border-emerald-800 transition-all cursor-pointer focus:outline-hidden"
+              title="Exporter vers Excel"
+            >
+              <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">grid_on</mat-icon>
+              <span>Excel</span>
+            </button>
+
+            <button 
+              (click)="exportToPDF()"
+              class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 text-xs font-semibold rounded-lg border border-rose-200 dark:border-rose-800 transition-all cursor-pointer focus:outline-hidden"
+              title="Exporter vers PDF"
+            >
+              <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">picture_as_pdf</mat-icon>
+              <span>PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Organisation des données par Jour -->
+        <div class="space-y-6" id="detailed-days-wrapper">
+          @for (dayGroup of detailedDays(); track dayGroup.date) {
+            <div class="w-full overflow-hidden" id="day-group-{{dayGroup.date}}">
+              <!-- Day Banner -->
+              <div class="bg-slate-50 dark:bg-slate-950 px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
+                  <mat-icon class="text-indigo-500 dark:text-indigo-400 text-sm">today</mat-icon>
+                  {{ dayGroup.dateLabel }}
+                </h3>
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-2.5 py-1 rounded-md">
+                  {{ dayGroup.ops.length }} opération(s)
+                </span>
+              </div>
+
+              <!-- Operations of the day -->
+              <div class="overflow-x-auto">
+                <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
+                  <thead>
+                    <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" colspan="10">
+                        LISTE DES MOUVEMENTS ENREGISTRÉS
+                      </th>
+                    </tr>
+                    <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 w-20 border border-slate-300 dark:border-slate-700 text-center">Heure</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Qte</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Montant</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Détails</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 w-48 border border-slate-300 dark:border-slate-700 text-center">Collaborateur</th>
+                      <th class="px-2 py-2 sm:px-4 sm:py-3 w-16 text-center border border-slate-300 dark:border-slate-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="text-slate-700 dark:text-slate-200">
+                    @for (op of dayGroup.ops; track op.id) {
+                      @for (item of op.items; track $index; let idx = $index; let len = $count) {
+                        <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800">
+                          @if (idx === 0) {
+                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 font-mono font-semibold text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 text-center align-middle bg-slate-50/50 dark:bg-slate-950/20">
+                              {{ op.heure }}
+                            </td>
+                          }
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
+                            {{ item.date }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
+                            {{ item.dn }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
+                            {{ item.produit }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center font-medium">
+                            {{ item.qte | number }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center text-slate-500">
+                            {{ item.pu | number }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center font-semibold text-indigo-600 dark:text-indigo-400">
+                            {{ item.montant | number }}
+                          </td>
+                          @if (idx === 0) {
+                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-slate-500 dark:text-slate-400 max-w-xs truncate border border-slate-300 dark:border-slate-700 align-middle text-center" [title]="op.details || ''">
+                              {{ op.details || '-' }}
+                            </td>
+                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 align-middle text-center">
+                              <div class="flex items-center gap-2 justify-center">
+                                <div class="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                  {{ op.collaborateur?.charAt(0) || 'C' }}
+                                </div>
+                                <span class="text-xs text-slate-600 dark:text-slate-300 truncate max-w-[120px]">{{ op.collaborateur }}</span>
+                              </div>
+                            </td>
+                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle">
+                              <button 
+                                (click)="deleteOp(op.id)"
+                                class="p-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center"
+                                title="Supprimer cette opération"
+                              >
+                                <mat-icon class="text-sm">delete</mat-icon>
+                              </button>
+                            </td>
+                          }
+                        </tr>
+                      }
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+</div>

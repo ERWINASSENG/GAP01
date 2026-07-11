@@ -1,0 +1,174 @@
+@reference "tailwindcss";
+
+/* Styles spécifiques pour le composant de connexion */
+#login-container {
+  @apply min-h-screen bg-slate-950 flex flex-col text-slate-100 font-sans;
+
+  @media (min-width: 768px) {
+    @apply flex-row;
+  }
+
+  /* Transition globale fluide pour les éléments interactifs */
+  input, button, select, a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Section Visuelle Gauche (Immersive) */
+  #login-visual-panel {
+    @apply hidden bg-cover bg-center relative;
+
+    @media (min-width: 768px) {
+      @apply flex w-1/2;
+    }
+
+    .visual-overlay {
+      @apply absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/70 to-transparent;
+    }
+
+    .visual-content {
+      @apply absolute bottom-12 left-12 right-12 z-10;
+    }
+
+    .system-status {
+      @apply mt-8 flex gap-6 text-xs text-slate-400 font-mono;
+    }
+  }
+
+  /* Section Formulaire Droite */
+  #login-form-panel {
+    @apply flex-1 flex flex-col justify-center px-6 py-12 bg-slate-900/40 backdrop-blur-md relative;
+
+    @media (min-width: 768px) {
+      @apply px-16;
+    }
+    @media (min-width: 1024px) {
+      @apply px-24;
+    }
+
+    .form-wrapper {
+      @apply max-w-md w-full mx-auto;
+    }
+
+    .mobile-logo {
+      @apply flex items-center gap-2 mb-8;
+
+      @media (min-width: 768px) {
+        @apply hidden;
+      }
+    }
+
+    .form-header {
+      @apply mb-8;
+      
+      h2 {
+        @apply text-2xl font-semibold tracking-tight text-white mb-2;
+      }
+
+      p {
+        @apply text-slate-400 text-sm;
+      }
+    }
+  }
+
+  /* Messages d'erreur */
+  #login-error-alert {
+    @apply mb-6 p-4 bg-red-950/40 border border-red-800 text-red-200 text-sm rounded-xl flex items-start gap-3;
+  }
+
+  /* Structure du Formulaire */
+  #login-form {
+    @apply space-y-5;
+
+    .form-group {
+      @apply space-y-2;
+    }
+
+    .input-label {
+      @apply block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2;
+    }
+
+    .input-wrapper {
+      @apply relative;
+
+      .input-icon {
+        @apply text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm;
+      }
+    }
+
+    .input-field {
+      @apply w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm outline-none;
+    }
+
+    .error-text {
+      @apply text-xs text-red-400 mt-1;
+    }
+  }
+
+  /* Bouton de soumission */
+  #login-submit-btn {
+    @apply w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-xl py-3 text-sm flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10;
+
+    .spinner {
+      @apply w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin;
+    }
+  }
+
+  /* Lien d'inscription */
+  #login-register-link {
+    @apply mt-4 text-center text-sm text-slate-400;
+
+    a {
+      @apply text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 cursor-pointer;
+    }
+  }
+
+  /* Section Profils de Démonstration */
+  #demo-profiles-panel {
+    @apply mt-8 border-t border-slate-800/60 pt-6;
+
+    .panel-title {
+      @apply text-xs font-medium text-slate-400 uppercase tracking-wider mb-4;
+    }
+
+    .profiles-grid {
+      @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
+    }
+
+    .demo-btn {
+      @apply flex items-center justify-between p-3 rounded-xl bg-slate-950/30 border border-slate-800/40 hover:border-emerald-500/40 hover:bg-slate-950/60 text-left transition-all cursor-pointer;
+
+      .profile-info {
+        @apply flex items-center gap-3;
+      }
+
+      .profile-icon-admin {
+        @apply text-emerald-400 bg-emerald-950/40 p-1.5 rounded-lg text-lg;
+      }
+
+      .profile-icon-user {
+        @apply text-purple-400 bg-purple-950/40 p-1.5 rounded-lg text-lg;
+      }
+
+      .profile-title {
+        @apply text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors;
+        
+        &.user-type {
+          @apply group-hover:text-purple-400;
+        }
+      }
+
+      .profile-subtitle {
+        @apply text-[10px] text-slate-500 font-mono;
+      }
+
+      .arrow-icon {
+        @apply text-slate-600 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all text-sm;
+        
+        &.user-type {
+          @apply group-hover:text-purple-400;
+        }
+      }
+    }
+  }
+}
+

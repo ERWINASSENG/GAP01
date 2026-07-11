@@ -1,0 +1,194 @@
+/* Dashboard component styles */
+:host {
+  display: block;
+}
+
+#dashboard-view {
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bannière de bienvenue */
+#welcome-banner {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    border-color: rgba(148, 163, 184, 0.2);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Cards Métriques (Bento) */
+.metric-card {
+  background-color: rgb(15, 23, 42);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+    pointer-events: none;
+  }
+
+  &:hover {
+    border-color: rgba(71, 85, 105, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.5);
+
+    .metric-icon-wrapper {
+      transform: scale(1.08);
+    }
+  }
+}
+
+.metric-icon-wrapper {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border-width: 1px;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &.blue {
+    background-color: rgba(30, 58, 138, 0.3);
+    border-color: rgba(30, 58, 138, 0.4);
+    color: rgb(96, 165, 250);
+  }
+
+  &.emerald {
+    background-color: rgba(6, 78, 59, 0.3);
+    border-color: rgba(6, 78, 59, 0.4);
+    color: rgb(52, 211, 153);
+  }
+
+  &.purple {
+    background-color: rgba(88, 28, 135, 0.3);
+    border-color: rgba(88, 28, 135, 0.4);
+    color: rgb(192, 132, 252);
+  }
+
+  &.yellow {
+    background-color: rgba(113, 63, 18, 0.3);
+    border-color: rgba(113, 63, 18, 0.4);
+    color: rgb(250, 204, 21);
+  }
+}
+
+/* Panels (Operations & Événements) */
+.dashboard-panel {
+  background-color: rgb(15, 23, 42);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  border-radius: 1rem;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(51, 65, 85, 0.8);
+  }
+}
+
+.panel-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
+/* Éléments d'opérations */
+.operation-item {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.4);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: rgba(2, 6, 23, 0.3);
+  }
+}
+
+.progress-track {
+  background-color: rgb(2, 6, 23);
+  height: 0.5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.progress-fill {
+  background-color: rgb(16, 185, 129);
+  height: 100%;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Journal d'activités */
+.log-item {
+  display: flex;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  padding: 0.5rem 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  &:hover {
+    transform: translateX(4px);
+  }
+}
+
+/* Graphique SVGs & Barres de capacité */
+.chart-container {
+  background-color: rgb(15, 23, 42);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(51, 65, 85, 0.8);
+  }
+}
+
+.chart-bar-track {
+  height: 1rem;
+  background-color: rgb(2, 6, 23);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.chart-bar-fill {
+  height: 100%;
+  border-radius: 0.5rem;
+  transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+}

@@ -1,0 +1,132 @@
+@reference "tailwindcss";
+
+/* Styles spécifiques pour le composant d'inscription */
+#register-container {
+  @apply min-h-screen bg-slate-950 flex flex-col text-slate-100 font-sans;
+
+  @media (min-width: 768px) {
+    @apply flex-row;
+  }
+
+  /* Transition globale fluide pour les éléments interactifs */
+  input, select, button, a {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Section Visuelle Gauche (Immersive) */
+  #register-visual-panel {
+    @apply hidden bg-cover bg-center relative;
+
+    @media (min-width: 768px) {
+      @apply flex w-1/2;
+    }
+
+    .visual-overlay {
+      @apply absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/70 to-transparent;
+    }
+
+    .visual-content {
+      @apply absolute bottom-12 left-12 right-12 z-10;
+    }
+
+    .system-status {
+      @apply mt-8 flex gap-6 text-xs text-slate-400 font-mono;
+    }
+  }
+
+  /* Section Formulaire Droite */
+  #register-form-panel {
+    @apply flex-1 flex flex-col justify-center px-6 py-12 bg-slate-900/40 backdrop-blur-md relative;
+
+    @media (min-width: 768px) {
+      @apply px-16;
+    }
+    @media (min-width: 1024px) {
+      @apply px-24;
+    }
+
+    .form-wrapper {
+      @apply max-w-md w-full mx-auto;
+    }
+
+    .mobile-logo {
+      @apply flex items-center gap-2 mb-8;
+
+      @media (min-width: 768px) {
+        @apply hidden;
+      }
+    }
+
+    .form-header {
+      @apply mb-8;
+      
+      h2 {
+        @apply text-2xl font-semibold tracking-tight text-white mb-2;
+      }
+
+      p {
+        @apply text-slate-400 text-sm;
+      }
+    }
+  }
+
+  /* Messages d'erreur et succès */
+  #register-error-alert {
+    @apply mb-6 p-4 bg-red-950/40 border border-red-800 text-red-200 text-sm rounded-xl flex items-start gap-3;
+  }
+
+  #register-success-alert {
+    @apply mb-6 p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-200 text-sm rounded-xl flex items-start gap-3;
+  }
+
+  /* Structure du Formulaire */
+  #register-form {
+    @apply space-y-4;
+
+    .form-group {
+      @apply space-y-2;
+    }
+
+    .input-label {
+      @apply block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2;
+    }
+
+    .input-wrapper {
+      @apply relative;
+
+      .input-icon {
+        @apply text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm;
+      }
+    }
+
+    .input-field {
+      @apply w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm outline-none;
+    }
+
+    .select-field {
+      @apply w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white rounded-xl py-3 pl-10 pr-4 text-sm outline-none appearance-none;
+    }
+
+    .error-text {
+      @apply text-xs text-red-400 mt-1;
+    }
+  }
+
+  /* Bouton de soumission */
+  #register-submit-btn {
+    @apply w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-xl py-3 text-sm flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 mt-6;
+
+    .spinner {
+      @apply w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin;
+    }
+  }
+
+  /* Liens */
+  #register-links {
+    @apply mt-8 text-center text-sm text-slate-400;
+
+    a {
+      @apply text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 cursor-pointer;
+    }
+  }
+}

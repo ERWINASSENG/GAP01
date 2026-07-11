@@ -1,0 +1,160 @@
+/* Cahier d'Opérations Custom Stylesheet with Micro-animations */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom scrollbar adjustments for dialog/wizard */
+#wizard-right-panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.2) transparent;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(99, 102, 241, 0.2);
+    border-radius: 9999px;
+  }
+}
+
+/* Administrative SCMC Table styles */
+.container-scmc {
+  max-width: 900px;
+  margin: 30px auto;
+}
+
+.title-scmc {
+  text-align: center;
+  font-family: "Times New Roman", serif;
+  font-size: 32px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+.table-scmc {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  border: 1px solid #000000;
+  color: #000000;
+  background-color: #ffffff;
+  
+  th, td {
+    border: 1px solid #000000;
+    height: 45px;
+    text-align: center;
+    padding: 0;
+    vertical-align: middle;
+  }
+  
+  th {
+    font-size: 16px;
+    font-family: "Times New Roman", serif;
+    font-weight: bold;
+    background-color: #f1f5f9;
+    color: #0f172a; /* slate-900 for high contrast */
+  }
+  
+  input, select {
+    width: 100%;
+    height: 100%;
+    border: none !important;
+    outline: none !important;
+    text-align: center;
+    font-size: 15px;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 8px;
+    color: #0f172a; /* slate-900 for high contrast */
+    
+    &:focus {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    &::placeholder {
+      color: #64748b; /* slate-500 */
+    }
+  }
+
+  tfoot td {
+    font-size: 20px;
+    font-family: "Times New Roman", serif;
+    font-weight: bold;
+    border: 1px solid #000000;
+    color: #0f172a; /* slate-900 */
+    background-color: #f8fafc;
+  }
+}
+
+/* Dark mode overrides for perfect readability */
+:host-context(.dark) {
+  .table-scmc {
+    border: 1px solid #475569; /* slate-600 */
+    color: #f1f5f9; /* slate-100 */
+    background-color: #0f172a; /* slate-900 */
+    
+    th, td {
+      border: 1px solid #475569; /* slate-600 */
+    }
+    
+    th {
+      background-color: #1e293b; /* slate-800 */
+      color: #f1f5f9; /* slate-100 */
+    }
+    
+    input, select {
+      color: #f1f5f9; /* slate-100 */
+      
+      &::placeholder {
+        color: #94a3b8; /* slate-400 */
+      }
+
+      /* Native elements overrides in dark mode */
+      color-scheme: dark;
+    }
+    
+    tfoot td {
+      border: 1px solid #475569; /* slate-600 */
+      color: #f1f5f9; /* slate-100 */
+      background-color: #1e293b; /* slate-800 */
+    }
+  }
+}
+
+.total {
+  text-align: center;
+}

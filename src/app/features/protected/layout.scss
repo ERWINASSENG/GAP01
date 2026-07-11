@@ -1,0 +1,28 @@
+/* Styles SCSS modernes pour la mise en page sécurisée */
+#sidebar {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+#page-content-slot {
+  scroll-behavior: smooth;
+
+  /* Style de défilement moderne et discret */
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(156, 163, 175, 0.3);
+    border-radius: 9999px;
+
+    &:hover {
+      background: rgba(156, 163, 175, 0.5);
+    }
+  }
+}

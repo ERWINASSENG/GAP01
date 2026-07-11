@@ -1,0 +1,137 @@
+<div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex transition-colors duration-300" id="protected-layout-container">
+  <!-- Mobile Sidebar Backdrop -->
+  @if (isSidebarOpen()) {
+    <button 
+      type="button"
+      class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300 w-full h-full cursor-default border-none outline-none"
+      (click)="closeSidebar()"
+      (keydown.escape)="closeSidebar()"
+      aria-label="Fermer le menu latéral"
+      id="sidebar-backdrop"
+    ></button>
+  }
+
+  <!-- Sidebar Component -->
+  <aside 
+    class="fixed inset-y-0 left-0 w-64 bg-slate-900 text-slate-100 flex flex-col z-50 transform lg:translate-x-0 lg:static transition-transform duration-300 ease-in-out border-r border-slate-800"
+    [class.translate-x-0]="isSidebarOpen()"
+    [class.-translate-x-full]="!isSidebarOpen()"
+    id="sidebar"
+  >
+    <!-- Branding Header -->
+    <div class="h-16 px-6 flex items-center justify-between border-b border-slate-800 gap-3" id="sidebar-branding">
+      <div class="flex items-center gap-3" id="sidebar-brand-wrapper">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg" id="app-logo">
+          P
+        </div>
+        <div>
+          <h1 class="font-sans font-bold text-lg tracking-tight text-white leading-none">PortSync</h1>
+          <span class="text-[10px] text-slate-400 font-mono">v1.0.0</span>
+        </div>
+      </div>
+
+      <!-- Theme Toggle Button next to P PortSync -->
+      <button 
+        (click)="themeService.toggleTheme()"
+        class="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-all border border-slate-800/80 focus:outline-hidden flex items-center justify-center cursor-pointer"
+        [attr.aria-label]="themeService.isDarkMode() ? 'Passer au mode clair' : 'Passer au mode sombre'"
+        id="btn-theme-toggle-sidebar"
+      >
+        <mat-icon class="text-[16px] leading-none h-4 w-4 flex items-center justify-center">{{ themeService.isDarkMode() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+    </div>
+
+    <!-- Navigation Links -->
+    <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto" id="sidebar-navigation">
+      <a 
+        routerLink="/dashboard" 
+        routerLinkActive="bg-slate-800 text-white font-medium border-l-4 border-indigo-500" 
+        [routerLinkActiveOptions]="{exact: true}"
+        (click)="closeSidebar()"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+        id="nav-dashboard"
+      >
+        <mat-icon class="text-slate-400 group-hover:text-indigo-400 transition-colors">dashboard</mat-icon>
+        <span class="text-sm">Tableau de bord</span>
+      </a>
+
+      <a 
+        routerLink="/cahier" 
+        routerLinkActive="bg-slate-800 text-white font-medium border-l-4 border-indigo-500"
+        (click)="closeSidebar()"
+        class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+        id="nav-cahier"
+      >
+        <mat-icon class="text-slate-400 group-hover:text-indigo-400 transition-colors">book</mat-icon>
+        <span class="text-sm">Cahier d'opérations</span>
+      </a>
+    </nav>
+
+    <!-- User Information Profile Panel -->
+    @if (currentUser()) {
+      <div class="p-4 border-t border-slate-800 bg-slate-950/40" id="sidebar-profile">
+        <div class="flex items-center gap-3 mb-3">
+          <img 
+            [src]="currentUser()?.avatarUrl" 
+            alt="Avatar de l'utilisateur" 
+            class="w-10 h-10 rounded-full object-cover border-2 border-slate-700"
+            referrerpolicy="no-referrer"
+            id="profile-avatar"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-white truncate leading-tight" id="profile-name">
+              {{ currentUser()?.displayName }}
+            </p>
+            <p class="text-xs text-slate-400 truncate capitalize" id="profile-role">
+              {{ currentUser()?.role === 'admin' ? 'Administrateur' : 'Collaborateur' }}
+            </p>
+          </div>
+        </div>
+        <button 
+          (click)="onLogout()"
+          class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-red-950/40 text-slate-300 hover:text-red-400 border border-slate-700 hover:border-red-900 rounded-lg text-xs font-medium transition-all"
+          id="btn-logout"
+        >
+          <mat-icon class="text-sm leading-none h-4 w-4">logout</mat-icon>
+          <span>Déconnexion</span>
+        </button>
+      </div>
+    }
+  </aside>
+
+  <!-- Main View Frame -->
+  <div class="flex-1 flex flex-col min-w-0" id="main-frame">
+    <!-- Top Navbar Header -->
+    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 z-30 transition-colors duration-300" id="header-navbar">
+      <div class="flex items-center gap-4" id="header-left">
+        <button 
+          (click)="toggleSidebar()"
+          class="p-2 -ml-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 rounded-lg lg:hidden focus:outline-hidden"
+          aria-label="Ouvrir le menu latéral"
+          id="btn-sidebar-toggle"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-4" id="header-right">
+        <div class="text-right hidden sm:block" id="header-user-text">
+          <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-tight">{{ currentUser()?.displayName }}</p>
+          <p class="text-xs text-slate-400 dark:text-slate-500">{{ currentUser()?.email }}</p>
+        </div>
+        <img 
+          [src]="currentUser()?.avatarUrl" 
+          alt="Avatar de session" 
+          class="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800"
+          referrerpolicy="no-referrer"
+          id="header-avatar"
+        />
+      </div>
+    </header>
+
+    <!-- Page Content Slot -->
+    <main class="flex-1 overflow-y-auto p-6 md:p-8" id="page-content-slot">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

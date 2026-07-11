@@ -1,0 +1,164 @@
+<div class="min-h-screen bg-slate-950 flex flex-col text-slate-100 font-sans" id="reset-container">
+  <!-- Section Visuelle Gauche (Immersive) -->
+  <div class="hidden bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?auto=format&fit=crop&q=80&w=1200')" id="reset-visual-panel">
+    <div class="visual-overlay"></div>
+    <div class="visual-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="material-icons text-emerald-400 text-4xl">anchor</span>
+        <h1 class="text-3xl font-bold tracking-tight">PortSync Pro</h1>
+      </div>
+      <p class="text-slate-300 text-lg leading-relaxed max-w-md">
+        Gestion et coordination sécurisée des opérations d'accès et d'administration de quai.
+      </p>
+      <div class="system-status">
+        <div>SYS.STATUS: <span class="text-emerald-400 font-bold">OPERATIONNEL</span></div>
+        <div>SECURE: <span class="text-emerald-400 font-bold">SSL ACTIVE</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Formulaire Droite -->
+  <div class="flex-1 flex flex-col justify-center px-6 py-12 bg-slate-900/40 backdrop-blur-md relative" id="reset-form-panel">
+    <div class="form-wrapper">
+      <!-- Logo pour mobile -->
+      <div class="mobile-logo" id="reset-mobile-logo">
+        <span class="material-icons text-emerald-400 text-3xl">anchor</span>
+        <span class="text-xl font-bold tracking-wider">PortSync Pro</span>
+      </div>
+
+      <!-- En-tête -->
+      <div class="form-header">
+        <h2>Réinitialisation</h2>
+        <p>Récupérez l'accès à votre console d'administration de manière sécurisée.</p>
+      </div>
+
+      <!-- Messages d'erreur -->
+      @if (errorMessage()) {
+        <div class="mb-6 p-4 bg-red-950/40 border border-red-800 text-red-200 text-sm rounded-xl flex items-start gap-3" id="reset-error-alert">
+          <span class="material-icons text-red-400 mt-0.5">error_outline</span>
+          <div>
+            <strong class="font-semibold block">Erreur</strong>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Messages de succès -->
+      @if (successMessage()) {
+        <div class="mb-6 p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-200 text-sm rounded-xl flex items-start gap-3" id="reset-success-alert">
+          <span class="material-icons text-emerald-400 mt-0.5">check_circle_outline</span>
+          <div>
+            <strong class="font-semibold block">Succès</strong>
+            <span>{{ successMessage() }}</span>
+          </div>
+        </div>
+      }
+
+      <!-- Le mode (demande de lien ou mise à jour) est déterminé automatiquement selon l'URL (token de récupération ou route reset-password) -->
+
+      <!-- Étape 1 : Demande de lien de réinitialisation -->
+      @if (mode() === 'request') {
+        <form [formGroup]="requestForm" (ngSubmit)="onRequestSubmit()" class="space-y-4" id="reset-request-form">
+          <div class="form-group">
+            <label for="email" class="input-label">Adresse Email Professionnelle</label>
+            <div class="input-wrapper">
+              <span class="input-icon">alternate_email</span>
+              <input
+                type="email"
+                id="email"
+                formControlName="email"
+                placeholder="nom.prenom@port.gov"
+                class="input-field"
+              />
+            </div>
+            @if (requestForm.get('email')?.touched && requestForm.get('email')?.errors?.['required']) {
+              <p class="error-text">L'adresse email est requise.</p>
+            }
+            @if (requestForm.get('email')?.touched && requestForm.get('email')?.errors?.['email']) {
+              <p class="error-text">Veuillez entrer une adresse email valide.</p>
+            }
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="requestForm.invalid || isLoading()"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-xl py-3 text-sm flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 mt-6"
+            id="reset-request-submit-btn"
+          >
+            @if (isLoading()) {
+              <div class="spinner"></div>
+              <span>Envoi en cours...</span>
+            } @else {
+              <span class="material-icons text-sm">send</span>
+              <span>Envoyer le lien de récupération</span>
+            }
+          </button>
+        </form>
+      }
+
+      <!-- Étape 2 : Saisie du nouveau mot de passe -->
+      @if (mode() === 'update') {
+        <form [formGroup]="updateForm" (ngSubmit)="onUpdateSubmit()" class="space-y-4" id="reset-update-form">
+          <div class="form-group">
+            <label for="password" class="input-label">Nouveau mot de passe</label>
+            <div class="input-wrapper">
+              <span class="input-icon">lock_outline</span>
+              <input
+                type="password"
+                id="password"
+                formControlName="password"
+                placeholder="••••••••••••"
+                class="input-field"
+              />
+            </div>
+            @if (updateForm.get('password')?.touched && updateForm.get('password')?.errors?.['required']) {
+              <p class="error-text">Le mot de passe est requis.</p>
+            }
+            @if (updateForm.get('password')?.touched && updateForm.get('password')?.errors?.['minlength']) {
+              <p class="error-text">Le mot de passe doit contenir au moins 6 caractères.</p>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword" class="input-label">Confirmer le mot de passe</label>
+            <div class="input-wrapper">
+              <span class="input-icon">lock</span>
+              <input
+                type="password"
+                id="confirmPassword"
+                formControlName="confirmPassword"
+                placeholder="••••••••••••"
+                class="input-field"
+              />
+            </div>
+            @if (updateForm.get('confirmPassword')?.touched && updateForm.errors?.['mismatch']) {
+              <p class="error-text">Les mots de passe ne correspondent pas.</p>
+            }
+          </div>
+
+          <button
+            type="submit"
+            [disabled]="updateForm.invalid || isLoading()"
+            class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-xl py-3 text-sm flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 mt-6"
+            id="reset-update-submit-btn"
+          >
+            @if (isLoading()) {
+              <div class="spinner"></div>
+              <span>Mise à jour...</span>
+            } @else {
+              <span class="material-icons text-sm">lock_reset</span>
+              <span>Enregistrer le nouveau mot de passe</span>
+            }
+          </button>
+        </form>
+      }
+
+      <!-- Liens de retour -->
+      <div class="mt-8 text-center text-sm text-slate-400" id="reset-links">
+        <a routerLink="/login" class="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 cursor-pointer">
+          Retour à la connexion
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

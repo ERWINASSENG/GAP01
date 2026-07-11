@@ -1,0 +1,6 @@
+{
+  "name": "Gestion des Activités Portuaires",
+  "description": "Application moderne de suivi et de gestion des mouvements de navires, de l'attribution des quais, des opérations de chargement/déchargement et du personnel portuaire.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
