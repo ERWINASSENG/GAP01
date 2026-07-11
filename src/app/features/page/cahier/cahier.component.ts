@@ -39,7 +39,7 @@ export class CahierComponent implements OnInit {
   readonly globalDnPrefix = signal<string>('DN');
 
   // Available options
-  readonly sites = ['Douala', 'Yaoundé', 'Kribi', 'AFISA'];
+  readonly sites = ['SCMC', 'TUSCANI', 'AFISA', 'AUTRE'];
   readonly operationTypes = ['Chargement', 'Déchargement', 'Surmontage', 'Transfert', 'Son'] as const;
   readonly sonLevels = ['Faible', 'Moyen', 'Élevé'];
   readonly frequences = ['Basse', 'Moyenne', 'Haute'];
