@@ -42,7 +42,11 @@ export class RegisterComponent {
     this.isLoading.set(false);
 
     if (res.success) {
-      this.successMessage.set('Compte créé avec succès ! Un e-mail de confirmation peut être envoyé selon vos paramètres Supabase. Vous allez être redirigé vers la page de connexion.');
+      if (res.isLocal) {
+        this.successMessage.set('Compte créé avec succès en mode local (pas de validation e-mail requise) ! Vous allez être redirigé vers la page de connexion.');
+      } else {
+        this.successMessage.set('Compte créé avec succès ! Un e-mail de confirmation peut être envoyé selon vos paramètres Supabase. Vous allez être redirigé vers la page de connexion.');
+      }
       this.registerForm.reset({ role: 'user' });
       setTimeout(() => {
         this.router.navigate(['/login']);

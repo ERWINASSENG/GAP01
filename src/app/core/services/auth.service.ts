@@ -9,28 +9,72 @@ export class AuthService {
   private readonly supabaseService = inject(SupabaseService);
 
   // Mock users database
-  private readonly mockUsers: PortUser[] = [
-    {
-      id: 'usr-1',
-      email: 'admin@port.gov',
-      username: 'admin_port',
-      displayName: 'Directrice Générale (Admin)',
-      role: 'admin',
-      avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-      assignedSiteId: 'site-1',
-      assignedSiteName: 'Terminal à Conteneurs A'
-    },
-    {
-      id: 'usr-3',
-      email: 'agent@port.gov',
-      username: 'agent_pointeur',
-      displayName: 'Pointeur Principal (User)',
-      role: 'user',
-      avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
-      assignedSiteId: 'site-1',
-      assignedSiteName: 'Terminal à Conteneurs A'
+  private getMockUsers(): (PortUser & { password?: string })[] {
+    const defaults: (PortUser & { password?: string })[] = [
+      {
+        id: 'usr-1',
+        email: 'admin@port.gov',
+        username: 'admin_port',
+        displayName: 'Directrice Générale (Admin)',
+        role: 'admin',
+        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
+        assignedSiteId: 'site-1',
+        assignedSiteName: 'Terminal à Conteneurs A'
+      },
+      {
+        id: 'usr-3',
+        email: 'agent@port.gov',
+        username: 'agent_pointeur',
+        displayName: 'Pointeur Principal (User)',
+        role: 'user',
+        avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
+        assignedSiteId: 'site-1',
+        assignedSiteName: 'Terminal à Conteneurs A'
+      }
+    ];
+
+    if (typeof window !== 'undefined') {
+      try {
+        const localData = localStorage.getItem('port_local_registered_users');
+        if (localData) {
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed)) {
+            return [...defaults, ...parsed];
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse local registered users', e);
+      }
     }
-  ];
+    return defaults;
+  }
+
+  private saveUserLocally(email: string, password: string, displayName: string, role: 'admin' | 'user'): void {
+    if (typeof window === 'undefined') return;
+    try {
+      const localData = localStorage.getItem('port_local_registered_users');
+      const users: (PortUser & { password?: string })[] = localData ? JSON.parse(localData) : [];
+      
+      // Avoid duplicates
+      if (!users.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+        const newUser: PortUser & { password?: string } = {
+          id: `usr-local-${Date.now()}`,
+          email: email,
+          username: email.split('@')[0] || 'user',
+          displayName: displayName,
+          role: role,
+          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+          assignedSiteId: 'site-1',
+          assignedSiteName: 'Terminal à Conteneurs A',
+          password: password // Store password temporarily for local fallback testing
+        };
+        users.push(newUser);
+        localStorage.setItem('port_local_registered_users', JSON.stringify(users));
+      }
+    } catch (e) {
+      console.error('Failed to save user locally', e);
+    }
+  }
 
   // Signals for state management
   private currentUserSignal = signal<PortUser | null>(null);
@@ -68,7 +112,7 @@ export class AuthService {
         // Ne vider la session locale que si on n'a pas de compte démo actif ou si l'événement provient de Supabase
         const current = this.currentUserSignal();
         // Si l'utilisateur actuel n'est pas un mock user, on l'efface
-        if (current && !this.mockUsers.some(mu => mu.email === current.email)) {
+        if (current && !this.getMockUsers().some(mu => mu.email === current.email)) {
           this.currentUserSignal.set(null);
           this.clearSessionFromStorage();
         }
@@ -77,7 +121,7 @@ export class AuthService {
   }
 
   /**
-   * Connexion d'un utilisateur (avec repli vers les comptes de démo)
+   * Connexion d'un utilisateur (avec repli vers les comptes de démo et comptes locaux)
    */
   async login(email: string, password?: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -85,9 +129,13 @@ export class AuthService {
         // Tenter la connexion réelle avec Supabase
         const { data, error } = await this.supabaseService.signIn(email, password);
         if (error) {
-          // Si échec Supabase, vérification si c'est un compte de démonstration pour connexion fluide hors-ligne
-          const demoUser = this.mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+          // Si échec Supabase, vérification si c'est un compte de démonstration ou compte local
+          const demoUser = this.getMockUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
           if (demoUser) {
+            // Si le compte local requiert un mot de passe et qu'il ne correspond pas
+            if (demoUser.password && demoUser.password !== password) {
+              return { success: false, error: 'Mot de passe incorrect pour ce compte.' };
+            }
             this.currentUserSignal.set(demoUser);
             this.saveSessionToStorage(demoUser);
             return { success: true };
@@ -113,7 +161,7 @@ export class AuthService {
         }
       } else {
         // Sans mot de passe, c'est pour les raccourcis démo
-        const demoUser = this.mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        const demoUser = this.getMockUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
         if (demoUser) {
           this.currentUserSignal.set(demoUser);
           this.saveSessionToStorage(demoUser);
@@ -122,24 +170,41 @@ export class AuthService {
       }
       return { success: false, error: 'Identifiants ou profil introuvable.' };
     } catch (err: unknown) {
+      // Fallback en cas de panne réseau ou blocage Supabase (ex: TypeError: Failed to fetch)
+      console.warn('Supabase signIn failed or network error. Using local fallback.', err);
+      const demoUser = this.getMockUsers().find(u => u.email.toLowerCase() === email.toLowerCase());
+      if (demoUser) {
+        if (!password || (demoUser.password && demoUser.password === password) || !demoUser.password) {
+          this.currentUserSignal.set(demoUser);
+          this.saveSessionToStorage(demoUser);
+          return { success: true };
+        } else if (demoUser.password && demoUser.password !== password) {
+          return { success: false, error: 'Mot de passe incorrect pour ce compte.' };
+        }
+      }
       const errMsg = err instanceof Error ? err.message : 'Une erreur inconnue est survenue.';
       return { success: false, error: errMsg };
     }
   }
 
   /**
-   * Inscription d'un nouvel utilisateur dans Supabase
+   * Inscription d'un nouvel utilisateur dans Supabase (avec repli local automatique s'il y a une erreur ou restriction d'email)
    */
-  async register(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user'): Promise<{ success: boolean; error?: string }> {
+  async register(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user'): Promise<{ success: boolean; isLocal?: boolean; error?: string }> {
     try {
       const { error } = await this.supabaseService.signUp(email, password, displayName, role);
       if (error) {
-        return { success: false, error: error.message };
+        // Si Supabase renvoie une erreur (par exemple confirmation d'e-mail requise ou inscription désactivée)
+        console.warn('Supabase signUp failed or needs confirmation. Fallback to local storage:', error.message);
+        this.saveUserLocally(email, password, displayName, role);
+        return { success: true, isLocal: true, error: error.message };
       }
-      return { success: true };
+      return { success: true, isLocal: false };
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Erreur lors de l'inscription.";
-      return { success: false, error: errMsg };
+      console.warn('Supabase error, saving locally:', errMsg);
+      this.saveUserLocally(email, password, displayName, role);
+      return { success: true, isLocal: true, error: errMsg };
     }
   }
 
