@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, DestroyRef, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -169,13 +169,104 @@ export class CahierComponent implements OnInit {
     this.globalDnPrefix.set(newPrefix);
   }
 
+  constructor() {
+    effect(() => {
+      const isOpen = this.isCreationPageOpen();
+      const step = this.currentStep();
+      const draftId = this.activeDraftId();
+      const prefix = this.globalDnPrefix();
+      
+      this.saveTemporaryState(isOpen, step, draftId, prefix);
+    });
+  }
+
+  private saveTemporaryState(
+    isOpen = this.isCreationPageOpen(),
+    step = this.currentStep(),
+    draftId = this.activeDraftId(),
+    prefix = this.globalDnPrefix()
+  ) {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    
+    if (!isOpen) {
+      localStorage.removeItem('cahier_temporary_form_state');
+      return;
+    }
+
+    const formRaw = this.operationForm.getRawValue();
+    const stateToSave = {
+      isOpen,
+      step,
+      draftId,
+      prefix,
+      formRaw
+    };
+
+    localStorage.setItem('cahier_temporary_form_state', JSON.stringify(stateToSave));
+  }
+
+  private restoreTemporaryState() {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    
+    const saved = localStorage.getItem('cahier_temporary_form_state');
+    if (!saved) return;
+
+    try {
+      const state = JSON.parse(saved);
+      if (state && state.isOpen) {
+        this.activeDraftId.set(state.draftId || null);
+        this.globalDnPrefix.set(state.prefix || 'DN');
+        
+        if (state.formRaw) {
+          const raw = state.formRaw;
+          this.operationForm.patchValue({
+            site: raw.site,
+            type: raw.type,
+            date: raw.date,
+            heure: raw.heure,
+            quantite: raw.quantite,
+            produit: raw.produit,
+            destination: raw.destination,
+            sonLevel: raw.sonLevel,
+            frequence: raw.frequence,
+            details: raw.details
+          }, { emitEvent: false });
+
+          this.itemsFormArray.clear();
+          if (raw.items && Array.isArray(raw.items)) {
+            raw.items.forEach((item: Partial<ChargementItem>) => {
+              this.itemsFormArray.push(this.createItemFormGroup(
+                item.date,
+                item.dn,
+                item.produit,
+                item.qte,
+                item.pu,
+                item.montant
+              ));
+            });
+          }
+        }
+
+        this.currentStep.set(state.step || 1);
+        this.isCreationPageOpen.set(true);
+      }
+    } catch (e) {
+      console.error('Error restoring temporary form state:', e);
+      localStorage.removeItem('cahier_temporary_form_state');
+    }
+  }
+
   ngOnInit() {
+    // Restore state from localStorage if exists
+    this.restoreTemporaryState();
+
     // Sync form changes to our formValue signal for live preview
     this.formValue.set(this.operationForm.value as OperationFormValue);
     this.operationForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(val => {
         this.formValue.set(val as OperationFormValue);
+        this.saveTemporaryState();
       });
   }
 
@@ -296,15 +387,18 @@ export class CahierComponent implements OnInit {
   }
 
   async closeModal() {
-    // Check if there is something to save in draft
-    const val = this.operationForm.value;
-    const hasProgress = val.site || val.type || (this.itemsFormArray.length > 0 && this.operationForm.dirty);
+    // Check if the table has actual data filled in
+    const hasTableData = this.itemsFormArray.controls.some(group => {
+      const v = group.value;
+      return (v.produit && v.produit.trim() !== '') || 
+             (v.qte !== null && Number(v.qte) > 0) || 
+             (v.pu !== null && Number(v.pu) > 0) ||
+             (v.dnNumber && v.dnNumber.trim() !== '');
+    });
     
-    if (hasProgress) {
-      if (confirm('Voulez-vous enregistrer ce formulaire en tant que brouillon pour le reprendre plus tard ?')) {
-        await this.saveAsDraft();
-        return;
-      }
+    if (hasTableData) {
+      await this.saveAsDraft();
+      return;
     }
     
     this.isCreationPageOpen.set(false);

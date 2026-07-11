@@ -403,15 +403,7 @@
           </div>
         }
 
-        <div class="flex items-center justify-between" id="monthly-header">
-          <h2 class="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <mat-icon class="text-slate-500 dark:text-slate-400">calendar_month</mat-icon>
-            Synthèse Mensuelle Globale
-          </h2>
-          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
-            {{ cahierService.monthlySummaries().length }} regroupement(s) actif(s)
-          </span>
-        </div>
+
 
         @if (cahierService.monthlySummaries().length === 0) {
           <div class="bg-white dark:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-12 text-center shadow-xs transition-all" id="empty-monthly-state">
