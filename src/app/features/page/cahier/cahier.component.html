@@ -652,34 +652,37 @@
         </div>
 
         <!-- Organisation des données par Tableaux distincts de Types d'Opérations -->
-        <div class="space-y-8" id="detailed-types-wrapper">
+        <div class="space-y-12 pb-12" id="detailed-types-wrapper">
           @for (group of detailedTypeGroups(); track group.type) {
-            <div class="w-full overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs" id="type-group-{{group.type}}">
+            @let isWagon = group.type === 'Chargement des wagons' || group.type === 'Chargement wagons';
+            @let isFarineWagon = isWagon && group.product?.toLowerCase() === 'farine';
+            
+            <div class="w-full" id="type-group-{{group.type}}">
               <!-- Operations of the type -->
-              <div class="overflow-x-auto">
+              <div class="overflow-x-auto shadow-sm">
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(group.type === 'Chargement' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') ? 7 : 6">
-                        {{ group.type | uppercase }}{{ selectedSummary()?.site === 'AUTRE' ? '' : ' ' + (selectedSummary()?.site | uppercase) }}
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="isFarineWagon ? 6 : (group.type === 'Chargement' || isWagon ? 7 : 6)">
+                        {{ group.type | uppercase }}{{ group.product ? ' DE ' + (group.product | uppercase) : '' }}
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
-                      @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
+                      @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || isWagon) {
                         @if (group.type === 'Chargement Camions') {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Camions</th>
-                        } @else if (group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
-                          <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">N° Wagon / Nbr sacs</th>
+                        } @else if (isWagon) {
+                          <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">N° Wagon</th>
                         } @else {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
                         }
                       }
-                      @if (group.type !== 'Chargement Camions') {
+                      @if (group.type !== 'Chargement Camions' && !isFarineWagon) {
                         <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
                       }
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
-                        {{ group.type === 'Chargement Camions' ? 'Tonnage' : 'Qte' }}
+                        {{ group.type === 'Chargement Camions' ? 'Tonnage' : (isFarineWagon ? 'Nbr sacs' : 'Qte') }}
                       </th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Montant</th>
@@ -693,12 +696,12 @@
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
-                          @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
+                          @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || isWagon) {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
                               {{ item.dn }}
                             </td>
                           }
-                          @if (group.type !== 'Chargement Camions') {
+                          @if (group.type !== 'Chargement Camions' && !isFarineWagon) {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
                               {{ item.produit }}
                             </td>
@@ -751,8 +754,8 @@
                           {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
-                      } @else if (group.type === 'Chargement' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
-                        <td colspan="4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                      } @else if (group.type === 'Chargement' || isWagon) {
+                        <td [attr.colspan]="isFarineWagon ? 3 : 4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
                           {{ getGroupTotalMontant(group.ops) | number }}

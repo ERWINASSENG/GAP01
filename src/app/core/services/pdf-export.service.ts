@@ -336,6 +336,56 @@ export class PdfExportService {
   }
 
   /**
+   * Génère et télécharge un rapport PDF récapitulatif mensuel pour un site.
+   */
+  exportMonthlySummary(summary: any): void {
+    const doc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const primaryColor = [15, 23, 42];
+    const secondaryColor = [71, 85, 105];
+
+    // Header
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(`RAPPORT MENSUEL DES OPÉRATIONS - ${summary.month.toUpperCase()}`, 14, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.text(`Site : ${summary.site}`, 14, 28);
+
+    // Table
+    const headers = [['Date', 'Collaborateur', 'Type', 'Détails', 'Items']];
+    const data = summary.operations.map((op: any) => [
+      `${op.date} ${op.heure}`,
+      op.collaborateur || '-',
+      op.type,
+      op.details || '-',
+      (op.items || []).map((i: any) => `${i.produit}: ${i.qte}`).join('\n')
+    ]);
+
+    autoTable(doc, {
+      startY: 35,
+      head: headers,
+      body: data,
+      theme: 'striped',
+      headStyles: { fillColor: primaryColor as [number, number, number], textColor: [255, 255, 255] },
+      bodyStyles: { fontSize: 8 },
+      columnStyles: {
+        3: { cellWidth: 60 },
+        4: { cellWidth: 60 }
+      }
+    });
+
+    const filename = `Rapport_${summary.month}_${summary.site}.pdf`.replace(/\s+/g, '_');
+    doc.save(filename);
+  }
+
+  /**
    * Formate une date YYYY-MM-DD en DD/MM/YYYY
    */
   private formatFrenchDate(dateStr: string): string {

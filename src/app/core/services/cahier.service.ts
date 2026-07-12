@@ -12,9 +12,11 @@ export class CahierService {
 
   // Core state of operations using signals
   private readonly _operations = signal<Operation[]>([]);
+  private readonly _adminOperations = signal<Operation[]>([]);
 
   // Public read-only signal for operations
   readonly operations = computed(() => this._operations());
+  readonly adminOperations = computed(() => this._adminOperations());
 
   /**
    * Checks if the user is a mock/demo user (local mode only)
@@ -29,6 +31,9 @@ export class CahierService {
     effect(() => {
       const user = this.authService.currentUser();
       this.loadInitialOperations(user?.id);
+      if (user?.role === 'admin') {
+        this.loadAllOperationsForAdmin();
+      }
     });
   }
 
@@ -49,8 +54,6 @@ export class CahierService {
       } catch (e) {
         console.error('Error parsing local operations', e);
       }
-    } else {
-      // Do nothing since seedMockData was removed
     }
 
     // 2. Try to sync with Supabase if the table exists
@@ -66,42 +69,68 @@ export class CahierService {
         .order('date', { ascending: false });
 
       if (!error && data) {
-        const mappedOps: Operation[] = (data as Record<string, unknown>[]).map(dbOp => {
-          const isDraftVal = dbOp['isdraft'] !== undefined ? dbOp['isdraft'] : (dbOp['isDraft'] !== undefined ? dbOp['isDraft'] : false);
-          const sonLevelVal = dbOp['sonlevel'] !== undefined ? dbOp['sonlevel'] : (dbOp['sonLevel'] || 'Moyen');
-          const rawItems = dbOp['operation_items'] || [];
-          return {
-            id: dbOp['id'] as string,
-            site: dbOp['site'] as string,
-            type: dbOp['type'] as Operation['type'],
-            date: dbOp['date'] as string,
-            heure: dbOp['heure'] ? (dbOp['heure'] as string).slice(0, 5) : '',
-            details: (dbOp['details'] as string) || '',
-            sonLevel: sonLevelVal as string,
-            frequence: (dbOp['frequence'] as string) || 'Basse',
-            collaborateur: (dbOp['collaborateur'] as string) || 'Collaborateur',
-            isDraft: isDraftVal as boolean,
-            user_id: dbOp['user_id'] as string,
-            items: Array.isArray(rawItems) ? (rawItems as Record<string, unknown>[]).map((item) => ({
-              id: (item['id'] as string) || crypto.randomUUID(),
-              date: (item['date'] as string) || (dbOp['date'] as string),
-              dn: (item['dn'] as string) || '',
-              produit: (item['produit'] as string) || '',
-              qte: Number(item['quantite']) || Number(item['qte']) || 0,
-              pu: Number(item['pu']) || 0,
-              montant: Number(item['montant']) || 0
-            })) : []
-          };
-        });
-
+        const mappedOps = this.mapDatabaseOperations(data);
         this._operations.set(mappedOps);
         this.saveToLocal(mappedOps);
       } else if (error) {
-        console.error('❌ Erreur Supabase (Fetch opérations):', error.message, error.details, error.hint);
+        console.error('❌ Erreur Supabase (Fetch opérations):', error.message);
       }
     } catch (err) {
-      console.error('❌ Erreur Réseau ou Supabase (Failed to fetch):', err);
+      console.error('❌ Erreur Réseau ou Supabase:', err);
     }
+  }
+
+  /**
+   * Loads all operations from all users (Admin only)
+   */
+  async loadAllOperationsForAdmin() {
+    if (this.authService.currentUser()?.role !== 'admin') return;
+
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('operations')
+        .select('*, operation_items(*)')
+        .order('date', { ascending: false });
+
+      if (!error && data) {
+        const mappedOps = this.mapDatabaseOperations(data);
+        this._adminOperations.set(mappedOps);
+      } else if (error) {
+        console.error('❌ Erreur Supabase (Admin Fetch):', error.message);
+      }
+    } catch (err) {
+      console.error('❌ Erreur Réseau (Admin Fetch):', err);
+    }
+  }
+
+  private mapDatabaseOperations(data: any[]): Operation[] {
+    return data.map(dbOp => {
+      const isDraftVal = dbOp['isdraft'] !== undefined ? dbOp['isdraft'] : (dbOp['isDraft'] !== undefined ? dbOp['isDraft'] : false);
+      const sonLevelVal = dbOp['sonlevel'] !== undefined ? dbOp['sonlevel'] : (dbOp['sonLevel'] || 'Moyen');
+      const rawItems = dbOp['operation_items'] || [];
+      return {
+        id: dbOp['id'] as string,
+        site: dbOp['site'] as string,
+        type: dbOp['type'] as Operation['type'],
+        date: dbOp['date'] as string,
+        heure: dbOp['heure'] ? (dbOp['heure'] as string).slice(0, 5) : '',
+        details: (dbOp['details'] as string) || '',
+        sonLevel: sonLevelVal as string,
+        frequence: (dbOp['frequence'] as string) || 'Basse',
+        collaborateur: (dbOp['collaborateur'] as string) || 'Collaborateur',
+        isDraft: isDraftVal as boolean,
+        user_id: dbOp['user_id'] as string,
+        items: Array.isArray(rawItems) ? rawItems.map((item: any) => ({
+          id: item['id'] || crypto.randomUUID(),
+          date: item['date'] || dbOp['date'],
+          dn: item['dn'] || '',
+          produit: item['produit'] || '',
+          qte: Number(item['quantite']) || Number(item['qte']) || 0,
+          pu: Number(item['pu']) || 0,
+          montant: Number(item['montant']) || 0
+        })) : []
+      };
+    });
   }
 
   /**
@@ -136,19 +165,13 @@ export class CahierService {
       isDraft: false
     };
 
-    // Remove any existing draft with the same ID or replace it
     const filtered = this._operations().filter(op => op.id !== id);
     const updated = [finalizedOp, ...filtered];
     this._operations.set(updated);
     this.saveToLocal(updated);
 
-    // Skip Supabase persistence for mock/demo users
-    if (this.isMockUser(user?.id)) {
-      console.log('ℹ️ User is a mock/demo user. Skipping Supabase persistence.');
-      return finalizedOp;
-    }
+    if (this.isMockUser(user?.id)) return finalizedOp;
 
-    // Try to upsert to Supabase
     try {
       const { data: opData, error: opError } = await this.supabaseService.client
         .from('operations')
@@ -169,14 +192,12 @@ export class CahierService {
         .single();
 
       if (!opError && opData) {
-        // Delete old items first to ensure perfect sync
         await this.supabaseService.client
           .from('operation_items')
           .delete()
           .eq('operation_id', finalizedOp.id);
 
         if (finalizedOp.items && finalizedOp.items.length > 0) {
-          // Insert new items
           const dbItems = finalizedOp.items.map(item => ({
             id: item.id || crypto.randomUUID(),
             operation_id: finalizedOp.id,
@@ -192,15 +213,12 @@ export class CahierService {
         }
       }
     } catch (err) {
-      console.error('Error saving operation to Supabase:', err);
+      console.error('Error saving operation:', err);
     }
 
     return finalizedOp;
   }
 
-  /**
-   * Saves or updates a draft operation
-   */
   async saveDraft(opData: Partial<Operation>): Promise<Operation> {
     const user = this.authService.currentUser();
     const id = opData.id || crypto.randomUUID();
@@ -235,13 +253,8 @@ export class CahierService {
     this._operations.set(updated);
     this.saveToLocal(updated);
 
-    // Skip Supabase persistence for mock/demo users
-    if (this.isMockUser(user?.id)) {
-      console.log('ℹ️ User is a mock/demo user. Skipping Supabase draft persistence.');
-      return draftOp;
-    }
+    if (this.isMockUser(user?.id)) return draftOp;
 
-    // Try to upsert to Supabase
     try {
       const { data: opData, error: opError } = await this.supabaseService.client
         .from('operations')
@@ -262,14 +275,12 @@ export class CahierService {
         .single();
 
       if (!opError && opData) {
-        // Delete old items first to ensure perfect sync
         await this.supabaseService.client
           .from('operation_items')
           .delete()
           .eq('operation_id', draftOp.id);
 
         if (draftOp.items && draftOp.items.length > 0) {
-          // Insert new items
           const dbItems = draftOp.items.map(item => ({
             id: item.id || crypto.randomUUID(),
             operation_id: draftOp.id,
@@ -285,28 +296,20 @@ export class CahierService {
         }
       }
     } catch (err) {
-      console.error('Error saving draft to Supabase:', err);
+      console.error('Error saving draft:', err);
     }
 
     return draftOp;
   }
 
-  /**
-   * Deletes an operation
-   */
   async deleteOperation(id: string): Promise<boolean> {
     const updated = this._operations().filter(op => op.id !== id);
     this._operations.set(updated);
     this.saveToLocal(updated);
 
-    // Skip Supabase deletion for mock/demo users
-    if (this.isMockUser()) {
-      console.log('ℹ️ User is a mock/demo user. Skipping Supabase deletion.');
-      return true;
-    }
+    if (this.isMockUser()) return true;
 
     try {
-      // Delete child operation items first to prevent foreign key constraint violations
       await this.supabaseService.client
         .from('operation_items')
         .delete()
@@ -317,23 +320,28 @@ export class CahierService {
         .delete()
         .eq('id', id);
     } catch (err) {
-      console.error('Error deleting operation from Supabase:', err);
+      console.error('Error deleting operation:', err);
     }
 
     return true;
   }
 
-  /**
-   * Groups operations into Monthly summaries by Month and Site
-   */
   readonly monthlySummaries = computed<MonthlySummary[]>(() => {
     const ops = this._operations();
+    return this.calculateSummaries(ops);
+  });
+
+  readonly adminMonthlySummaries = computed<MonthlySummary[]>(() => {
+    const ops = this._adminOperations();
+    return this.calculateSummaries(ops);
+  });
+
+  private calculateSummaries(ops: Operation[]): MonthlySummary[] {
     const groups: Record<string, Operation[]> = {};
 
     ops.forEach(op => {
-      if (op.isDraft) return; // Do not include drafts in monthly summaries
+      if (op.isDraft) return;
       if (!op || !op.date || typeof op.date !== 'string') return;
-      // Extract Month and Year (e.g. '2026-07' -> 'Juillet 2026')
       const dateParts = op.date.split('-');
       if (dateParts.length < 2) return;
       const year = dateParts[0];
@@ -364,6 +372,5 @@ export class CahierService {
         operations
       };
     });
-  });
-
+  }
 }

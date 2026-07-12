@@ -162,13 +162,14 @@ export class CahierComponent implements OnInit {
     const currentType = this.operationForm.controls.type.value || '';
     const currentProduct = this.operationForm.controls.produit.value || '';
     const isDnRequired = currentType === 'Chargement' || currentType === 'Chargement Camions' || ((currentType === 'Chargement des wagons' || currentType === 'Chargement wagons') && currentProduct === 'Blé');
+    const isProduitRequired = currentType !== 'Chargement Camions';
 
     const group = new FormGroup({
       date: new FormControl<string>(date || this.operationForm.controls.date.value || '', { validators: [Validators.required], nonNullable: true }),
-      dnPrefix: new FormControl<string>(prefix, { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
+      dnPrefix: new FormControl<string>(prefix, { validators: (isDnRequired && currentType !== 'Chargement Camions') ? [Validators.required] : [], nonNullable: true }),
       dnNumber: new FormControl<string>(num, { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
       dn: new FormControl<string>(dn || `${prefix} ${num}`.toUpperCase().trim(), { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
-      produit: new FormControl<string>(produit, { validators: [Validators.required], nonNullable: true }),
+      produit: new FormControl<string>(produit, { validators: isProduitRequired ? [Validators.required] : [], nonNullable: true }),
       qte: new FormControl<number | null>(qte, { validators: [Validators.required, Validators.min(0)] }),
       pu: new FormControl<number | null>(pu, { validators: [Validators.required, Validators.min(0)] }),
       montant: new FormControl<number | null>(montant, { validators: [Validators.required, Validators.min(0)] })
@@ -732,20 +733,23 @@ export class CahierComponent implements OnInit {
       return `${date}T${heure}`;
     };
 
-    // Group by operation type
+    // Group by operation type and product
     const groups: Record<string, Operation[]> = {};
     ops.forEach(op => {
       const type = op.type;
-      if (!groups[type]) {
-        groups[type] = [];
+      const product = op.produit || '';
+      const key = product ? `${type}|${product}` : type;
+      
+      if (!groups[key]) {
+        groups[key] = [];
       }
-      groups[type].push(op);
+      groups[key].push(op);
     });
 
-    // Sort types based on the oldest (earliest) operation date/time in each type
-    const sortedTypes = Object.keys(groups).sort((typeA, typeB) => {
-      const opsA = groups[typeA];
-      const opsB = groups[typeB];
+    // Sort groups based on the oldest (earliest) operation date/time in each group
+    const sortedKeys = Object.keys(groups).sort((keyA, keyB) => {
+      const opsA = groups[keyA];
+      const opsB = groups[keyB];
 
       const earliestA = opsA.reduce((earliest, curr) => {
         return getOpTime(curr) < getOpTime(earliest) ? curr : earliest;
@@ -758,14 +762,18 @@ export class CahierComponent implements OnInit {
       return getOpTime(earliestA).localeCompare(getOpTime(earliestB));
     });
 
-    return sortedTypes.map(type => {
-      // Sort operations inside this type chronologically descending (newest first for readability)
-      const sortedOps = groups[type].sort((a, b) => {
+    return sortedKeys.map(key => {
+      // Sort operations inside this group chronologically descending (newest first for readability)
+      const sortedOps = groups[key].sort((a, b) => {
         return getOpTime(b).localeCompare(getOpTime(a));
       });
 
+      // The key is "Type|Product" or just "Type"
+      const [type, product] = key.includes('|') ? key.split('|') : [key, ''];
+
       return {
         type,
+        product,
         ops: sortedOps
       };
     });

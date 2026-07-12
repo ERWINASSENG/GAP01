@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  background-color: #f8fafc; // slate-50
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  background-color: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
