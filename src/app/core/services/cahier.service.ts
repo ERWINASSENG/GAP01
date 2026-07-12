@@ -16,6 +16,14 @@ export class CahierService {
   // Public read-only signal for operations
   readonly operations = computed(() => this._operations());
 
+  /**
+   * Checks if the user is a mock/demo user (local mode only)
+   */
+  private isMockUser(userId?: string): boolean {
+    const id = userId || this.authService.currentUser()?.id;
+    return !!id && id.startsWith('usr');
+  }
+
   constructor() {
     // Re-load operations whenever the authenticated user changes
     effect(() => {
@@ -46,6 +54,11 @@ export class CahierService {
     }
 
     // 2. Try to sync with Supabase if the table exists
+    if (this.isMockUser(userId)) {
+      console.log('ℹ️ User is a mock/demo user. Skipping Supabase sync and relying purely on localStorage.');
+      return;
+    }
+
     try {
       const { data, error } = await this.supabaseService.client
         .from('operations')
@@ -128,6 +141,12 @@ export class CahierService {
     const updated = [finalizedOp, ...filtered];
     this._operations.set(updated);
     this.saveToLocal(updated);
+
+    // Skip Supabase persistence for mock/demo users
+    if (this.isMockUser(user?.id)) {
+      console.log('ℹ️ User is a mock/demo user. Skipping Supabase persistence.');
+      return finalizedOp;
+    }
 
     // Try to upsert to Supabase
     try {
@@ -216,6 +235,12 @@ export class CahierService {
     this._operations.set(updated);
     this.saveToLocal(updated);
 
+    // Skip Supabase persistence for mock/demo users
+    if (this.isMockUser(user?.id)) {
+      console.log('ℹ️ User is a mock/demo user. Skipping Supabase draft persistence.');
+      return draftOp;
+    }
+
     // Try to upsert to Supabase
     try {
       const { data: opData, error: opError } = await this.supabaseService.client
@@ -273,6 +298,12 @@ export class CahierService {
     const updated = this._operations().filter(op => op.id !== id);
     this._operations.set(updated);
     this.saveToLocal(updated);
+
+    // Skip Supabase deletion for mock/demo users
+    if (this.isMockUser()) {
+      console.log('ℹ️ User is a mock/demo user. Skipping Supabase deletion.');
+      return true;
+    }
 
     try {
       // Delete child operation items first to prevent foreign key constraint violations

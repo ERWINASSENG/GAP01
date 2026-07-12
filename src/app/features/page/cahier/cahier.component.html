@@ -644,7 +644,7 @@
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
                       <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons') ? 7 : 6">
-                        {{ selectedSummary()?.type }} — Site {{ selectedSummary()?.site }}
+                        {{ selectedSummary()?.type | uppercase }}{{ selectedSummary()?.site === 'AUTRE' ? '' : ' ' + (selectedSummary()?.site | uppercase) }}
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">

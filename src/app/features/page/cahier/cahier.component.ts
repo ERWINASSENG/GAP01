@@ -36,7 +36,42 @@ export class CahierComponent implements OnInit {
   // UI state signals
   readonly isCreationPageOpen = signal<boolean>(false);
   readonly currentStep = signal<number>(1); // Step 1: Site, Step 2: Type, Step 3: Form & Table
-  readonly selectedSummary = signal<MonthlySummary | null>(null);
+  readonly selectedSummaryKeys = signal<{ month: string; site: string; type: string } | null>(null);
+
+  readonly selectedSummary = computed<MonthlySummary | null>(() => {
+    const keys = this.selectedSummaryKeys();
+    if (!keys) return null;
+
+    const allOps = this.cahierService.operations();
+    const filteredOps = allOps.filter(o => {
+      if (!o || o.isDraft) return false;
+      if (!o.date || typeof o.date !== 'string') return false;
+      const dateParts = o.date.split('-');
+      if (dateParts.length < 2) return false;
+      const year = dateParts[0];
+      const monthNum = parseInt(dateParts[1], 10);
+      const monthsFrench = [
+        'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
+      ];
+      const monthFrench = monthsFrench[monthNum - 1] || 'Inconnu';
+      const key = `${monthFrench} ${year}`;
+      return key === keys.month && o.site === keys.site && o.type === keys.type;
+    });
+
+    if (filteredOps.length === 0) {
+      return null;
+    }
+
+    return {
+      month: keys.month,
+      site: keys.site,
+      type: keys.type,
+      count: filteredOps.length,
+      operations: filteredOps
+    };
+  });
+
   readonly activeDraftId = signal<string | null>(null);
   readonly globalDnPrefix = signal<string>('DN');
   readonly isEditingRegistered = signal<boolean>(false);
@@ -453,21 +488,6 @@ export class CahierComponent implements OnInit {
 
     await this.cahierService.saveDraft(draftData);
     this.isCreationPageOpen.set(false);
-
-    // Si on a sauvegardé une opération enregistrée sous forme de brouillon, on doit la retirer du sommaire mensuel affiché
-    if (this.selectedSummary() && this.activeDraftId()) {
-      const activeSum = this.selectedSummary()!;
-      const updatedOps = activeSum.operations.filter(op => op.id !== this.activeDraftId());
-      if (updatedOps.length > 0) {
-        this.selectedSummary.set({
-          ...activeSum,
-          count: updatedOps.length,
-          operations: updatedOps
-        });
-      } else {
-        this.selectedSummary.set(null);
-      }
-    }
   }
 
   async closeModal() {
@@ -578,59 +598,12 @@ export class CahierComponent implements OnInit {
 
     await this.cahierService.addOperation(opData);
     this.isCreationPageOpen.set(false); // Close directly, bypassing dirty closeModal check
-
-    // If a summary was detailed, keep it updated or refresh active view
-    if (this.selectedSummary()) {
-      const activeSum = this.selectedSummary()!;
-      // Find updated matching operations for the active summary grouping
-      const allOps = this.cahierService.operations();
-      const updatedOps = allOps.filter(o => {
-        if (!o || !o.date || typeof o.date !== 'string') return false;
-        // Extract French month name to match
-        const dateParts = o.date.split('-');
-        if (dateParts.length < 2) return false;
-        const year = dateParts[0];
-        const monthNum = parseInt(dateParts[1], 10);
-        const monthsFrench = [
-          'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-          'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-        ];
-        const monthFrench = monthsFrench[monthNum - 1] || 'Inconnu';
-        const key = `${monthFrench} ${year}`;
-        return key === activeSum.month && o.site === activeSum.site && o.type === activeSum.type;
-      });
-
-      if (updatedOps.length > 0) {
-        this.selectedSummary.set({
-          ...activeSum,
-          count: updatedOps.length,
-          operations: updatedOps
-        });
-      } else {
-        this.selectedSummary.set(null);
-      }
-    }
   }
 
   // Deletes an operation with local confirmation
   async deleteOp(id: string) {
     if (confirm('Voulez-vous vraiment supprimer cette opération ?')) {
       await this.cahierService.deleteOperation(id);
-      
-      // Update detailed view if selected
-      if (this.selectedSummary()) {
-        const activeSum = this.selectedSummary()!;
-        const updatedOps = activeSum.operations.filter(op => op.id !== id);
-        if (updatedOps.length > 0) {
-          this.selectedSummary.set({
-            ...activeSum,
-            count: updatedOps.length,
-            operations: updatedOps
-          });
-        } else {
-          this.selectedSummary.set(null);
-        }
-      }
     }
   }
 
@@ -641,12 +614,16 @@ export class CahierComponent implements OnInit {
 
   // Set detailed summary view
   showDetail(summary: MonthlySummary) {
-    this.selectedSummary.set(summary);
+    this.selectedSummaryKeys.set({
+      month: summary.month,
+      site: summary.site,
+      type: summary.type
+    });
   }
 
   // Clear detailed summary and return to main monthly table
   backToMonthly() {
-    this.selectedSummary.set(null);
+    this.selectedSummaryKeys.set(null);
   }
 
   // Returns operations grouped by day of the week for detailed view

@@ -10,28 +10,7 @@ export class AuthService {
 
   // Mock users database
   private getMockUsers(): (PortUser & { password?: string })[] {
-    const defaults: (PortUser & { password?: string })[] = [
-      {
-        id: 'usr-1',
-        email: 'admin@port.gov',
-        username: 'admin_port',
-        displayName: 'Directrice Générale (Admin)',
-        role: 'admin',
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
-        assignedSiteId: 'site-1',
-        assignedSiteName: 'Terminal à Conteneurs A'
-      },
-      {
-        id: 'usr-3',
-        email: 'agent@port.gov',
-        username: 'agent_pointeur',
-        displayName: 'Pointeur Principal (User)',
-        role: 'user',
-        avatarUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150',
-        assignedSiteId: 'site-1',
-        assignedSiteName: 'Terminal à Conteneurs A'
-      }
-    ];
+    const defaults: (PortUser & { password?: string })[] = [];
 
     if (typeof window !== 'undefined') {
       try {

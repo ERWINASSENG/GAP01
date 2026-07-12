@@ -40,13 +40,8 @@ export class LoginComponent {
       if (res.success) {
         this.router.navigate(['/dashboard']);
       } else {
-        this.errorMessage.set(res.error || 'Utilisateur introuvable avec cette adresse email. Utilisez les profils rapides ci-dessous.');
+        this.errorMessage.set(res.error || 'Utilisateur introuvable avec cette adresse email.');
       }
     }, 600);
-  }
-
-  useDemoAccount(email: string): void {
-    this.loginForm.patchValue({ email, password: 'demouser123' });
-    this.onSubmit();
   }
 }
