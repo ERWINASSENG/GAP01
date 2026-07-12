@@ -42,22 +42,21 @@ export class CahierService {
         console.error('Error parsing local operations', e);
       }
     } else {
-      // Seed some default data if empty so the user can see something immediately
-      this.seedMockData(userId);
+      // Do nothing since seedMockData was removed
     }
 
     // 2. Try to sync with Supabase if the table exists
     try {
       const { data, error } = await this.supabaseService.client
-        .from('cahier_operations')
-        .select('*')
+        .from('operations')
+        .select('*, operation_items(*)')
         .order('date', { ascending: false });
 
       if (!error && data) {
         const mappedOps: Operation[] = (data as Record<string, unknown>[]).map(dbOp => {
           const isDraftVal = dbOp['isdraft'] !== undefined ? dbOp['isdraft'] : (dbOp['isDraft'] !== undefined ? dbOp['isDraft'] : false);
           const sonLevelVal = dbOp['sonlevel'] !== undefined ? dbOp['sonlevel'] : (dbOp['sonLevel'] || 'Moyen');
-          const rawItems = dbOp['items'] || [];
+          const rawItems = dbOp['operation_items'] || [];
           return {
             id: dbOp['id'] as string,
             site: dbOp['site'] as string,
@@ -75,7 +74,7 @@ export class CahierService {
               date: (item['date'] as string) || (dbOp['date'] as string),
               dn: (item['dn'] as string) || '',
               produit: (item['produit'] as string) || '',
-              qte: Number(item['qte']) || Number(item['quantite']) || 0,
+              qte: Number(item['quantite']) || Number(item['qte']) || 0,
               pu: Number(item['pu']) || 0,
               montant: Number(item['montant']) || 0
             })) : []
@@ -132,8 +131,8 @@ export class CahierService {
 
     // Try to upsert to Supabase
     try {
-      await this.supabaseService.client
-        .from('cahier_operations')
+      const { data: opData, error: opError } = await this.supabaseService.client
+        .from('operations')
         .upsert([{
           id: finalizedOp.id,
           site: finalizedOp.site,
@@ -142,14 +141,37 @@ export class CahierService {
           heure: finalizedOp.heure,
           details: finalizedOp.details,
           sonlevel: finalizedOp.sonLevel,
-          sonLevel: finalizedOp.sonLevel,
           frequence: finalizedOp.frequence,
           collaborateur: finalizedOp.collaborateur,
           isdraft: finalizedOp.isDraft,
-          isDraft: finalizedOp.isDraft,
-          user_id: finalizedOp.user_id,
-          items: finalizedOp.items || []
-        }]);
+          user_id: finalizedOp.user_id
+        }])
+        .select()
+        .single();
+
+      if (!opError && opData) {
+        // Delete old items first to ensure perfect sync
+        await this.supabaseService.client
+          .from('operation_items')
+          .delete()
+          .eq('operation_id', finalizedOp.id);
+
+        if (finalizedOp.items && finalizedOp.items.length > 0) {
+          // Insert new items
+          const dbItems = finalizedOp.items.map(item => ({
+            id: item.id || crypto.randomUUID(),
+            operation_id: finalizedOp.id,
+            dn: item.dn || '',
+            produit: item.produit || '',
+            quantite: Number(item.qte) || 0,
+            pu: Number(item.pu) || 0,
+            montant: Number(item.montant) || 0
+          }));
+          await this.supabaseService.client
+            .from('operation_items')
+            .insert(dbItems);
+        }
+      }
     } catch (err) {
       console.error('Error saving operation to Supabase:', err);
     }
@@ -196,8 +218,8 @@ export class CahierService {
 
     // Try to upsert to Supabase
     try {
-      await this.supabaseService.client
-        .from('cahier_operations')
+      const { data: opData, error: opError } = await this.supabaseService.client
+        .from('operations')
         .upsert([{
           id: draftOp.id,
           site: draftOp.site,
@@ -206,14 +228,37 @@ export class CahierService {
           heure: draftOp.heure,
           details: draftOp.details,
           sonlevel: draftOp.sonLevel,
-          sonLevel: draftOp.sonLevel,
           frequence: draftOp.frequence,
           collaborateur: draftOp.collaborateur,
           isdraft: draftOp.isDraft,
-          isDraft: draftOp.isDraft,
-          user_id: draftOp.user_id,
-          items: draftOp.items || []
-        }]);
+          user_id: draftOp.user_id
+        }])
+        .select()
+        .single();
+
+      if (!opError && opData) {
+        // Delete old items first to ensure perfect sync
+        await this.supabaseService.client
+          .from('operation_items')
+          .delete()
+          .eq('operation_id', draftOp.id);
+
+        if (draftOp.items && draftOp.items.length > 0) {
+          // Insert new items
+          const dbItems = draftOp.items.map(item => ({
+            id: item.id || crypto.randomUUID(),
+            operation_id: draftOp.id,
+            dn: item.dn || '',
+            produit: item.produit || '',
+            quantite: Number(item.qte) || 0,
+            pu: Number(item.pu) || 0,
+            montant: Number(item.montant) || 0
+          }));
+          await this.supabaseService.client
+            .from('operation_items')
+            .insert(dbItems);
+        }
+      }
     } catch (err) {
       console.error('Error saving draft to Supabase:', err);
     }
@@ -230,8 +275,14 @@ export class CahierService {
     this.saveToLocal(updated);
 
     try {
+      // Delete child operation items first to prevent foreign key constraint violations
       await this.supabaseService.client
-        .from('cahier_operations')
+        .from('operation_items')
+        .delete()
+        .eq('operation_id', id);
+
+      await this.supabaseService.client
+        .from('operations')
         .delete()
         .eq('id', id);
     } catch (err) {
@@ -284,94 +335,4 @@ export class CahierService {
     });
   });
 
-  /**
-   * Seeds realistic initial operations
-   */
-  private seedMockData(userId?: string) {
-    const initial: Operation[] = [
-      {
-        id: '1',
-        site: 'Douala',
-        type: 'Chargement',
-        date: '2026-07-06', // Monday
-        heure: '08:30',
-        collaborateur: 'ERWIN ALBERIC ASSENG',
-        user_id: userId,
-        details: 'Chargement camion grue remorque 24T',
-        items: [
-          { date: '2026-07-06', dn: 'DN-2026-001', produit: 'Ciment CPJ45', qte: 12, pu: 4500, montant: 54000 },
-          { date: '2026-07-06', dn: 'DN-2026-002', produit: 'Ciment Multix', qte: 20, pu: 4200, montant: 84000 }
-        ]
-      },
-      {
-        id: '2',
-        site: 'Douala',
-        type: 'Déchargement',
-        date: '2026-07-06', // Monday
-        heure: '10:15',
-        collaborateur: 'ERWIN ALBERIC ASSENG',
-        user_id: userId,
-        details: 'Déchargement navire quai n°4',
-        items: [
-          { date: '2026-07-06', dn: 'DN-DEC-201', produit: 'Clinker', qte: 800, pu: 5000, montant: 4000000 }
-        ]
-      },
-      {
-        id: '3',
-        site: 'Kribi',
-        type: 'Transfert',
-        date: '2026-07-07', // Tuesday
-        heure: '14:00',
-        collaborateur: 'Collaborateur',
-        user_id: userId,
-        details: 'Transfert inter-sites par camion benne',
-        items: [
-          { date: '2026-07-07', dn: 'DN-TRA-301', produit: 'Farine', qte: 500, pu: 4000, montant: 2000000 }
-        ]
-      },
-      {
-        id: '4',
-        site: 'Douala',
-        type: 'Surmontage',
-        date: '2026-07-08', // Wednesday
-        heure: '09:00',
-        collaborateur: 'ERWIN ALBERIC ASSENG',
-        user_id: userId,
-        details: 'Réorganisation des stocks hangar A',
-        items: [
-          { date: '2026-07-08', dn: 'DN-SUR-401', produit: 'Gazole', qte: 1200, pu: 800, montant: 960000 }
-        ]
-      },
-      {
-        id: '5',
-        site: 'AFISA',
-        type: 'Son',
-        date: '2026-07-09', // Thursday
-        heure: '11:45',
-        collaborateur: 'ERWIN ALBERIC ASSENG',
-        user_id: userId,
-        details: 'Contrôle de niveau sonore - Conforme',
-        items: [
-          { date: '2026-07-09', dn: 'DN-SON-501', produit: 'Contrôle Sonore', qte: 1, pu: 15000, montant: 15000 }
-        ]
-      },
-      {
-        id: '6',
-        site: 'Yaoundé',
-        type: 'Chargement',
-        date: '2026-07-05', // Sunday
-        heure: '16:30',
-        collaborateur: 'Jean Dupont',
-        user_id: userId,
-        details: 'Livraison chantier périphérique',
-        items: [
-          { date: '2026-07-05', dn: 'DN-YAO-501', produit: 'Fer à béton 12mm', qte: 20, pu: 8500, montant: 170000 },
-          { date: '2026-07-05', dn: 'DN-YAO-502', produit: 'Fer à béton 10mm', qte: 10, pu: 7500, montant: 75000 }
-        ]
-      }
-    ];
-
-    this._operations.set(initial);
-    this.saveToLocal(initial);
-  }
 }

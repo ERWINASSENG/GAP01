@@ -1,6 +1,6 @@
 import {ChangeDetectionStrategy, Component, inject, computed, signal} from '@angular/core';
 import {DecimalPipe} from '@angular/common';
-import {Router, RouterLink} from '@angular/router';
+import {Router} from '@angular/router';
 import {AuthService} from '../../core/services/auth.service';
 
 export interface LocalPortOperation {
@@ -17,7 +17,7 @@ export interface LocalPortOperation {
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-dashboard',
-  imports: [RouterLink, DecimalPipe],
+  imports: [DecimalPipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
