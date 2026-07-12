@@ -160,8 +160,7 @@ export class CahierComponent implements OnInit {
     }
 
     const currentType = this.operationForm.controls.type.value || '';
-    const currentProduct = this.operationForm.controls.produit.value || '';
-    const isDnRequired = currentType === 'Chargement' || currentType === 'Chargement Camions' || ((currentType === 'Chargement des wagons' || currentType === 'Chargement wagons') && currentProduct === 'Blé');
+    const isDnRequired = currentType === 'Chargement' || currentType === 'Chargement Camions' || currentType === 'Chargement des wagons' || currentType === 'Chargement wagons';
     const isProduitRequired = currentType !== 'Chargement Camions';
 
     const group = new FormGroup({
@@ -363,7 +362,7 @@ export class CahierComponent implements OnInit {
   readonly tableColspan = computed<number>(() => {
     const val = this.formValue();
     if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
-      return val.produit === 'Blé' ? 6 : 5;
+      return 6;
     }
     if (val.type === 'Chargement Camions') {
       return 6;
@@ -374,7 +373,7 @@ export class CahierComponent implements OnInit {
   readonly totalColspan = computed<number>(() => {
     const val = this.formValue();
     if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
-      return val.produit === 'Blé' ? 4 : 3;
+      return 4;
     }
     if (val.type === 'Chargement Camions') {
       return 4;
