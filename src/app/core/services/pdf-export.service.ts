@@ -59,7 +59,7 @@ export class PdfExportService {
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(14);
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    const documentTitle = op.type === 'Chargement' || op.type === 'Chargement des wagons'
+    const documentTitle = op.type === 'Chargement' || op.type === 'Chargement Camions' || op.type === 'Chargement des wagons' || op.type === 'Chargement wagons'
       ? 'BON DE CHARGEMENT ADMINISTRATIF'
       : `FICHE DE MOUVEMENT : ${op.type.toUpperCase()}`;
     doc.text(documentTitle, 14, 42);
@@ -125,7 +125,7 @@ export class PdfExportService {
     doc.text(op.heure || '-', 158, 68);
 
     // Champs spécifiques selon le type
-    if (op.type !== 'Chargement' && op.type !== 'Chargement des wagons') {
+    if (op.type !== 'Chargement' && op.type !== 'Chargement Camions' && op.type !== 'Chargement des wagons' && op.type !== 'Chargement wagons') {
       doc.setFont('Helvetica', 'bold');
       doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
       doc.text('Produit concerné :', 115, 76);
@@ -145,41 +145,82 @@ export class PdfExportService {
       doc.text('Mode d\'Opération :', 115, 76);
       doc.setFont('Helvetica', 'normal');
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(op.type === 'Chargement des wagons' ? 'Ferroviaire (Wagons)' : 'Routier / Interne', 148, 76);
+      doc.text((op.type === 'Chargement des wagons' || op.type === 'Chargement wagons') ? 'Ferroviaire (Wagons)' : 'Routier / Interne', 148, 76);
     }
 
     // --- CONTENU DU MOUVEMENT ---
     let finalY = 94;
 
-    if (op.type === 'Chargement' || op.type === 'Chargement des wagons') {
+    if (op.type === 'Chargement' || op.type === 'Chargement Camions' || op.type === 'Chargement des wagons' || op.type === 'Chargement wagons') {
       // Affichage sous forme de Tableau complet (jsPDF AutoTable)
       doc.setFont('Helvetica', 'bold');
       doc.setFontSize(11);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text('LIGNES DE CHARGEMENT DÉTAILLÉES', 14, 96);
 
-      const headers = [['Date', 'DN / LTI / ISTI', 'Produit', 'Qte (t)', 'PU (FCFA)', 'Montant (FCFA)']];
-      const data = (op.items || []).map(item => [
-        this.formatFrenchDate(item.date),
-        item.dn || '-',
-        item.produit || '-',
-        item.qte.toLocaleString('fr-FR'),
-        item.pu.toLocaleString('fr-FR'),
-        item.montant.toLocaleString('fr-FR')
-      ]);
+      let headers = [['Date', 'DN / LTI / ISTI', 'Produit', 'Qte (t)', 'PU (FCFA)', 'Montant (FCFA)']];
+      let colStyles: Record<number, { cellWidth: number, halign?: 'left' | 'right' | 'center' }> = {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 40, halign: 'left' },
+        3: { cellWidth: 22, halign: 'right' },
+        4: { cellWidth: 25, halign: 'right' },
+        5: { cellWidth: 35, halign: 'right' }
+      };
+
+      if (op.type === 'Chargement Camions') {
+        headers = [['Date', 'Camions', 'Tonnage (t)', 'PU (FCFA)', 'Montant (FCFA)']];
+        colStyles = {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 35, halign: 'right' },
+          4: { cellWidth: 42, halign: 'right' }
+        };
+      }
+
+      const data = (op.items || []).map(item => {
+        if (op.type === 'Chargement Camions') {
+          return [
+            this.formatFrenchDate(item.date),
+            item.dn || '-',
+            item.qte.toLocaleString('fr-FR'),
+            item.pu.toLocaleString('fr-FR'),
+            item.montant.toLocaleString('fr-FR')
+          ];
+        }
+        return [
+          this.formatFrenchDate(item.date),
+          item.dn || '-',
+          item.produit || '-',
+          item.qte.toLocaleString('fr-FR'),
+          item.pu.toLocaleString('fr-FR'),
+          item.montant.toLocaleString('fr-FR')
+        ];
+      });
 
       const totalQte = (op.items || []).reduce((acc, curr) => acc + curr.qte, 0);
       const totalMontant = (op.items || []).reduce((acc, curr) => acc + curr.montant, 0);
 
       // Ligne de total
-      data.push([
-        'TOTAL',
-        '',
-        '',
-        totalQte.toLocaleString('fr-FR'),
-        '',
-        totalMontant.toLocaleString('fr-FR')
-      ]);
+      if (op.type === 'Chargement Camions') {
+        data.push([
+          'TOTAL',
+          '',
+          totalQte.toLocaleString('fr-FR'),
+          '',
+          totalMontant.toLocaleString('fr-FR')
+        ]);
+      } else {
+        data.push([
+          'TOTAL',
+          '',
+          '',
+          totalQte.toLocaleString('fr-FR'),
+          '',
+          totalMontant.toLocaleString('fr-FR')
+        ]);
+      }
 
       autoTable(doc, {
         startY: 100,
@@ -198,14 +239,7 @@ export class PdfExportService {
           textColor: [51, 65, 85],
           halign: 'center'
         },
-        columnStyles: {
-          0: { cellWidth: 25 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 40, halign: 'left' },
-          3: { cellWidth: 22, halign: 'right' },
-          4: { cellWidth: 25, halign: 'right' },
-          5: { cellWidth: 35, halign: 'right' }
-        },
+        columnStyles: colStyles,
         didParseCell: (cellData) => {
           // Mettre en gras la dernière ligne de total
           if (cellData.row.index === data.length - 1) {

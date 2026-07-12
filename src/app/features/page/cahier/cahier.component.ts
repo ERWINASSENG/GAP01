@@ -79,6 +79,16 @@ export class CahierComponent implements OnInit {
   // Available options
   readonly sites = ['SCMC', 'TUSCANI', 'AFISA', 'AUTRE'];
   readonly operationTypes = ['Chargement', 'Déchargement', 'Surmontage', 'Transfert', 'Son', 'Chargement des wagons'] as const;
+  readonly filteredOperationTypes = computed<string[]>(() => {
+    const site = this.formValue().site;
+    if (site === 'TUSCANI') {
+      return ['Chargement Camions'];
+    }
+    if (site === 'AUTRE') {
+      return ['Chargement des wagons', 'Reconditionnement', 'Nettoyage'];
+    }
+    return ['Chargement', 'Déchargement', 'Surmontage', 'Transfert', 'Son'];
+  });
   readonly sonLevels = ['Faible', 'Moyen', 'Élevé'];
   readonly frequences = ['Basse', 'Moyenne', 'Haute'];
 
@@ -149,7 +159,7 @@ export class CahierComponent implements OnInit {
 
     const currentType = this.operationForm.controls.type.value || '';
     const currentProduct = this.operationForm.controls.produit.value || '';
-    const isDnRequired = currentType === 'Chargement' || (currentType === 'Chargement des wagons' && currentProduct === 'Blé');
+    const isDnRequired = currentType === 'Chargement' || currentType === 'Chargement Camions' || ((currentType === 'Chargement des wagons' || currentType === 'Chargement wagons') && currentProduct === 'Blé');
 
     const group = new FormGroup({
       date: new FormControl<string>(date || this.operationForm.controls.date.value || '', { validators: [Validators.required], nonNullable: true }),
@@ -173,7 +183,7 @@ export class CahierComponent implements OnInit {
       }
 
       // Dropdown selection (dnPrefix + dnNumber) should only apply to 'Chargement' or 'Chargement des wagons' type
-      if (this.operationForm.value.type === 'Chargement' || this.operationForm.value.type === 'Chargement des wagons') {
+      if (this.operationForm.value.type === 'Chargement' || this.operationForm.value.type === 'Chargement Camions' || this.operationForm.value.type === 'Chargement des wagons' || this.operationForm.value.type === 'Chargement wagons') {
         const rawNum = (v.dnNumber || '').toString().trim();
         const calculatedDn = `${v.dnPrefix || 'DN'} ${rawNum}`.toUpperCase().trim();
         if (group.controls['dn'].value !== calculatedDn) {
@@ -349,18 +359,18 @@ export class CahierComponent implements OnInit {
 
   readonly tableColspan = computed<number>(() => {
     const val = this.formValue();
-    if (val.type === 'Chargement des wagons') {
+    if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
       return val.produit === 'Blé' ? 6 : 5;
     }
-    return val.type === 'Chargement' ? 7 : 6;
+    return (val.type === 'Chargement' || val.type === 'Chargement Camions') ? 7 : 6;
   });
 
   readonly totalColspan = computed<number>(() => {
     const val = this.formValue();
-    if (val.type === 'Chargement des wagons') {
+    if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
       return val.produit === 'Blé' ? 4 : 3;
     }
-    return val.type === 'Chargement' ? 5 : 4;
+    return (val.type === 'Chargement' || val.type === 'Chargement Camions') ? 5 : 4;
   });
 
   getOperationTotal(op: Operation): number {
@@ -522,12 +532,17 @@ export class CahierComponent implements OnInit {
   // Auto-selection triggers transition
   selectSite(siteOption: string) {
     this.operationForm.patchValue({ site: siteOption });
+    const currentType = this.operationForm.controls.type.value;
+    const allowedTypes = this.filteredOperationTypes();
+    if (currentType && !allowedTypes.includes(currentType)) {
+      this.operationForm.patchValue({ type: '' });
+    }
     this.goToStep2();
   }
 
   selectType(typeOption: string) {
     this.operationForm.patchValue({ type: typeOption });
-    if (typeOption !== 'Chargement des wagons') {
+    if (typeOption !== 'Chargement des wagons' && typeOption !== 'Chargement wagons') {
       this.goToStep3();
     }
   }

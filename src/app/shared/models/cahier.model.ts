@@ -12,7 +12,7 @@ export interface OperationItem {
 export interface Operation {
   id: string;
   site: string;
-  type: 'Chargement' | 'Déchargement' | 'Surmontage' | 'Transfert' | 'Son' | 'Chargement des wagons';
+  type: 'Chargement' | 'Déchargement' | 'Surmontage' | 'Transfert' | 'Son' | 'Chargement des wagons' | 'Chargement wagons' | 'Reconditionnement' | 'Nettoyage' | 'Chargement Camions';
   date: string;
   heure: string;
   details?: string;
