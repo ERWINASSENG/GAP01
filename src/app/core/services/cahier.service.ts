@@ -84,10 +84,10 @@ export class CahierService {
         this._operations.set(mappedOps);
         this.saveToLocal(mappedOps);
       } else if (error) {
-        console.error('Error fetching operations from Supabase:', error);
+        console.error('❌ Erreur Supabase (Fetch opérations):', error.message, error.details, error.hint);
       }
     } catch (err) {
-      console.error('Supabase operations table error:', err);
+      console.error('❌ Erreur Réseau ou Supabase (Failed to fetch):', err);
     }
   }
 
