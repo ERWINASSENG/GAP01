@@ -480,6 +480,26 @@ export class CahierComponent implements OnInit {
   // Save/Update the draft and quit the wizard
   async saveAsDraft() {
     const val = this.operationForm.getRawValue();
+    let rawItems = (val.items || []) as {
+      date?: string;
+      dnPrefix?: string;
+      dnNumber?: string;
+      dn?: string;
+      produit?: string;
+      qte?: number | null;
+      pu?: number | null;
+      montant?: number | null;
+    }[];
+
+    // Sort items if they are "Chargement" at "AFISA" or "SCMC"
+    if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
+      rawItems = [...rawItems].sort((a, b) => {
+        const aNum = (a.dnNumber || '').trim();
+        const bNum = (b.dnNumber || '').trim();
+        return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
+      });
+    }
+
     const draftData: Partial<Operation> = {
       id: this.activeDraftId() || undefined,
       site: val.site || undefined,
@@ -492,9 +512,9 @@ export class CahierComponent implements OnInit {
       destination: val.destination || undefined,
       sonLevel: val.sonLevel || undefined,
       frequence: val.frequence || undefined,
-      items: (val.items as Partial<OperationItem>[] || []).map(item => ({
+      items: rawItems.map(item => ({
         date: item.date || val.date || '',
-        dn: item.dn || '',
+        dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
         produit: item.produit || '',
         qte: item.qte !== null ? Number(item.qte) : 0,
         pu: item.pu !== null ? Number(item.pu) : 0,
@@ -600,6 +620,26 @@ export class CahierComponent implements OnInit {
     }
 
     const val = this.operationForm.getRawValue();
+    let rawItems = (val.items || []) as {
+      date?: string;
+      dnPrefix?: string;
+      dnNumber?: string;
+      dn?: string;
+      produit?: string;
+      qte?: number | null;
+      pu?: number | null;
+      montant?: number | null;
+    }[];
+
+    // Sort items if they are "Chargement" at "AFISA" or "SCMC"
+    if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
+      rawItems = [...rawItems].sort((a, b) => {
+        const aNum = (a.dnNumber || '').trim();
+        const bNum = (b.dnNumber || '').trim();
+        return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
+      });
+    }
+
     const opData: Omit<Operation, 'id' | 'collaborateur'> & { id?: string } = {
       id: this.activeDraftId() || undefined,
       site: val.site,
@@ -607,9 +647,9 @@ export class CahierComponent implements OnInit {
       date: val.date,
       heure: val.heure,
       details: val.details || undefined,
-      items: (val.items as Partial<OperationItem>[] || []).map(item => ({
+      items: rawItems.map(item => ({
         date: item.date || '',
-        dn: item.dn || '',
+        dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
         produit: item.produit || '',
         qte: Number(item.qte) || 0,
         pu: Number(item.pu) || 0,
