@@ -362,7 +362,10 @@ export class CahierComponent implements OnInit {
     if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
       return val.produit === 'Blé' ? 6 : 5;
     }
-    return (val.type === 'Chargement' || val.type === 'Chargement Camions') ? 7 : 6;
+    if (val.type === 'Chargement Camions') {
+      return 6;
+    }
+    return val.type === 'Chargement' ? 7 : 6;
   });
 
   readonly totalColspan = computed<number>(() => {
@@ -370,7 +373,10 @@ export class CahierComponent implements OnInit {
     if (val.type === 'Chargement des wagons' || val.type === 'Chargement wagons') {
       return val.produit === 'Blé' ? 4 : 3;
     }
-    return (val.type === 'Chargement' || val.type === 'Chargement Camions') ? 5 : 4;
+    if (val.type === 'Chargement Camions') {
+      return 4;
+    }
+    return val.type === 'Chargement' ? 5 : 4;
   });
 
   getOperationTotal(op: Operation): number {
