@@ -9,7 +9,8 @@
         <div class="flex items-center gap-2.5">
           <button 
             (click)="closeModal()"
-            class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
+            [disabled]="isSaving()"
+            class="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Retourner à la liste"
           >
             <mat-icon class="!text-[18px] !h-4.5 !w-4.5 flex items-center justify-center">arrow_back</mat-icon>
@@ -426,7 +427,8 @@
               <button 
                 type="button" 
                 (click)="closeModal()"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+                [disabled]="isSaving()"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Annuler
               </button>
@@ -435,7 +437,8 @@
               <button 
                 type="button" 
                 (click)="currentStep.set(1)"
-                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1.5"
+                [disabled]="isSaving()"
+                class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <mat-icon class="text-sm leading-none h-4 w-4">arrow_back</mat-icon>
                 <span>Précédent</span>
@@ -445,7 +448,8 @@
               <button 
                 type="button" 
                 (click)="currentStep.set(2)"
-                class="px-2 py-2 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-xs hover:shadow-sm shrink-0"
+                [disabled]="isSaving()"
+                class="px-2 py-2 sm:px-3 sm:py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center gap-1 shadow-xs hover:shadow-sm shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">arrow_back</mat-icon>
                 <span class="hidden sm:inline">Précédent</span>
@@ -454,18 +458,26 @@
                 <button 
                   type="button" 
                   (click)="onSubmit()"
-                  [disabled]="operationForm.invalid"
-                  class="px-2 py-2 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:border-slate-200 dark:disabled:border-slate-700/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:shadow-md border border-transparent shrink-0"
+                  [disabled]="operationForm.invalid || isSaving()"
+                  class="px-2 py-2 sm:px-4 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 disabled:border-slate-200 dark:disabled:border-slate-700/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1 shadow-sm hover:shadow-md border border-transparent shrink-0 disabled:cursor-not-allowed"
                 >
-                  <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">check_circle</mat-icon>
-                  <span>Enregistrer</span>
+                  @if (isSaving()) {
+                    <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Enregistrement...</span>
+                  } @else {
+                    <mat-icon class="text-[14px] leading-none h-4 w-4 flex items-center justify-center">check_circle</mat-icon>
+                    <span>Enregistrer</span>
+                  }
                 </button>
               </div>
             }
           </div>
         </div>
-
       </div>
+
     </div>
   } @else {
     <!-- VUE CLASSIQUE : EN-TÊTE + TABLEAU MENSUEL / DÉTAILLÉ -->
@@ -540,7 +552,7 @@
                   </div>
                   <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2.5 mt-1">
                     <button 
-                      (click)="cahierService.deleteOperation(draft.id)"
+                      (click)="deleteOp(draft.id)"
                       class="p-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all cursor-pointer flex items-center justify-center"
                       title="Supprimer ce brouillon"
                     >
@@ -801,6 +813,69 @@
         </div>
       </div>
     }
+  }
+
+  <!-- BOÎTE DE DIALOGUE DE CONFIRMATION DE SUPPRESSION PERSONNALISÉE -->
+  @if (operationToDelete()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4" id="delete-confirmation-modal">
+      <!-- Backdrop -->
+      <button 
+        type="button"
+        (click)="cancelDelete()"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 w-full h-full cursor-default"
+        aria-label="Fermer la confirmation"
+      ></button>
+
+      <!-- Modal Content -->
+      <div 
+        class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl relative z-10 transform transition-all duration-300 scale-100"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-modal-title"
+      >
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-rose-500/10 text-rose-600 dark:text-rose-400 rounded-xl shrink-0">
+            <mat-icon class="!text-[24px] !h-6 !w-6 flex items-center justify-center">warning</mat-icon>
+          </div>
+          <div class="space-y-2 flex-1">
+            <h3 id="delete-modal-title" class="text-base font-bold text-slate-900 dark:text-white">
+              Confirmer la suppression
+            </h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Voulez-vous vraiment supprimer cette opération ? Cette action est irréversible.
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <button 
+            type="button" 
+            (click)="cancelDelete()"
+            [disabled]="isSaving()"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Annuler
+          </button>
+          <button 
+            type="button" 
+            (click)="confirmDelete()"
+            [disabled]="isSaving()"
+            class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md border border-transparent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+          >
+            @if (isSaving()) {
+              <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Suppression...</span>
+            } @else {
+              <mat-icon class="text-sm leading-none h-4 w-4">delete_forever</mat-icon>
+              <span>Supprimer</span>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
   }
 
 </div>

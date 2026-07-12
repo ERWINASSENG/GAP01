@@ -37,6 +37,8 @@ export class CahierComponent implements OnInit {
   readonly isCreationPageOpen = signal<boolean>(false);
   readonly currentStep = signal<number>(1); // Step 1: Site, Step 2: Type, Step 3: Form & Table
   readonly selectedSummaryKeys = signal<{ month: string; site: string; type: string } | null>(null);
+  readonly isSaving = signal<boolean>(false);
+  readonly operationToDelete = signal<string | null>(null);
 
   readonly selectedSummary = computed<MonthlySummary | null>(() => {
     const keys = this.selectedSummaryKeys();
@@ -479,54 +481,61 @@ export class CahierComponent implements OnInit {
 
   // Save/Update the draft and quit the wizard
   async saveAsDraft() {
-    const val = this.operationForm.getRawValue();
-    let rawItems = (val.items || []) as {
-      date?: string;
-      dnPrefix?: string;
-      dnNumber?: string;
-      dn?: string;
-      produit?: string;
-      qte?: number | null;
-      pu?: number | null;
-      montant?: number | null;
-    }[];
+    if (this.isSaving()) return;
+    this.isSaving.set(true);
+    try {
+      const val = this.operationForm.getRawValue();
+      let rawItems = (val.items || []) as {
+        date?: string;
+        dnPrefix?: string;
+        dnNumber?: string;
+        dn?: string;
+        produit?: string;
+        qte?: number | null;
+        pu?: number | null;
+        montant?: number | null;
+      }[];
 
-    // Sort items if they are "Chargement" at "AFISA" or "SCMC"
-    if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
-      rawItems = [...rawItems].sort((a, b) => {
-        const aNum = (a.dnNumber || '').trim();
-        const bNum = (b.dnNumber || '').trim();
-        return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
-      });
+      // Sort items if they are "Chargement" at "AFISA" or "SCMC"
+      if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
+        rawItems = [...rawItems].sort((a, b) => {
+          const aNum = (a.dnNumber || '').trim();
+          const bNum = (b.dnNumber || '').trim();
+          return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
+        });
+      }
+
+      const draftData: Partial<Operation> = {
+        id: this.activeDraftId() || undefined,
+        site: val.site || undefined,
+        type: val.type as Operation['type'] || undefined,
+        date: val.date || undefined,
+        heure: val.heure || undefined,
+        details: val.details || undefined,
+        quantite: val.quantite !== null ? val.quantite : undefined,
+        produit: val.produit || undefined,
+        destination: val.destination || undefined,
+        sonLevel: val.sonLevel || undefined,
+        frequence: val.frequence || undefined,
+        items: rawItems.map(item => ({
+          date: item.date || val.date || '',
+          dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
+          produit: item.produit || '',
+          qte: item.qte !== null ? Number(item.qte) : 0,
+          pu: item.pu !== null ? Number(item.pu) : 0,
+          montant: item.montant !== null ? Number(item.montant) : 0
+        }))
+      };
+
+      await this.cahierService.saveDraft(draftData);
+      this.isCreationPageOpen.set(false);
+    } finally {
+      this.isSaving.set(false);
     }
-
-    const draftData: Partial<Operation> = {
-      id: this.activeDraftId() || undefined,
-      site: val.site || undefined,
-      type: val.type as Operation['type'] || undefined,
-      date: val.date || undefined,
-      heure: val.heure || undefined,
-      details: val.details || undefined,
-      quantite: val.quantite !== null ? val.quantite : undefined,
-      produit: val.produit || undefined,
-      destination: val.destination || undefined,
-      sonLevel: val.sonLevel || undefined,
-      frequence: val.frequence || undefined,
-      items: rawItems.map(item => ({
-        date: item.date || val.date || '',
-        dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
-        produit: item.produit || '',
-        qte: item.qte !== null ? Number(item.qte) : 0,
-        pu: item.pu !== null ? Number(item.pu) : 0,
-        montant: item.montant !== null ? Number(item.montant) : 0
-      }))
-    };
-
-    await this.cahierService.saveDraft(draftData);
-    this.isCreationPageOpen.set(false);
   }
 
   async closeModal() {
+    if (this.isSaving()) return;
     if (this.isEditingRegistered()) {
       if (this.operationForm.dirty) {
         // Si l'utilisateur a fait des modifications sur le formulaire/tableau d'une opération déjà enregistrée 
@@ -614,58 +623,81 @@ export class CahierComponent implements OnInit {
 
   // Submits the newly created operation
   async onSubmit() {
+    if (this.isSaving()) return;
     if (this.operationForm.invalid) {
       this.operationForm.markAllAsTouched();
       return;
     }
 
-    const val = this.operationForm.getRawValue();
-    let rawItems = (val.items || []) as {
-      date?: string;
-      dnPrefix?: string;
-      dnNumber?: string;
-      dn?: string;
-      produit?: string;
-      qte?: number | null;
-      pu?: number | null;
-      montant?: number | null;
-    }[];
+    this.isSaving.set(true);
+    try {
+      const val = this.operationForm.getRawValue();
+      let rawItems = (val.items || []) as {
+        date?: string;
+        dnPrefix?: string;
+        dnNumber?: string;
+        dn?: string;
+        produit?: string;
+        qte?: number | null;
+        pu?: number | null;
+        montant?: number | null;
+      }[];
 
-    // Sort items if they are "Chargement" at "AFISA" or "SCMC"
-    if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
-      rawItems = [...rawItems].sort((a, b) => {
-        const aNum = (a.dnNumber || '').trim();
-        const bNum = (b.dnNumber || '').trim();
-        return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
-      });
+      // Sort items if they are "Chargement" at "AFISA" or "SCMC"
+      if ((val.site === 'AFISA' || val.site === 'SCMC') && val.type === 'Chargement') {
+        rawItems = [...rawItems].sort((a, b) => {
+          const aNum = (a.dnNumber || '').trim();
+          const bNum = (b.dnNumber || '').trim();
+          return aNum.localeCompare(bNum, undefined, { numeric: true, sensitivity: 'base' });
+        });
+      }
+
+      const opData: Omit<Operation, 'id' | 'collaborateur'> & { id?: string } = {
+        id: this.activeDraftId() || undefined,
+        site: val.site,
+        type: val.type as Operation['type'],
+        date: val.date,
+        heure: val.heure,
+        details: val.details || undefined,
+        items: rawItems.map(item => ({
+          date: item.date || '',
+          dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
+          produit: item.produit || '',
+          qte: Number(item.qte) || 0,
+          pu: Number(item.pu) || 0,
+          montant: Number(item.montant) || 0
+        }))
+      };
+
+      await this.cahierService.addOperation(opData);
+      this.isCreationPageOpen.set(false); // Close directly, bypassing dirty closeModal check
+    } finally {
+      this.isSaving.set(false);
     }
-
-    const opData: Omit<Operation, 'id' | 'collaborateur'> & { id?: string } = {
-      id: this.activeDraftId() || undefined,
-      site: val.site,
-      type: val.type as Operation['type'],
-      date: val.date,
-      heure: val.heure,
-      details: val.details || undefined,
-      items: rawItems.map(item => ({
-        date: item.date || '',
-        dn: item.dn || `${item.dnPrefix || 'DN'} ${item.dnNumber || ''}`.toUpperCase().trim(),
-        produit: item.produit || '',
-        qte: Number(item.qte) || 0,
-        pu: Number(item.pu) || 0,
-        montant: Number(item.montant) || 0
-      }))
-    };
-
-    await this.cahierService.addOperation(opData);
-    this.isCreationPageOpen.set(false); // Close directly, bypassing dirty closeModal check
   }
 
   // Deletes an operation with local confirmation
-  async deleteOp(id: string) {
-    if (confirm('Voulez-vous vraiment supprimer cette opération ?')) {
-      await this.cahierService.deleteOperation(id);
+  deleteOp(id: string) {
+    this.operationToDelete.set(id);
+  }
+
+  // Confirms the deletion of an operation
+  async confirmDelete() {
+    const id = this.operationToDelete();
+    if (id) {
+      this.isSaving.set(true);
+      try {
+        await this.cahierService.deleteOperation(id);
+      } finally {
+        this.isSaving.set(false);
+        this.operationToDelete.set(null);
+      }
     }
+  }
+
+  // Cancels delete operation
+  cancelDelete() {
+    this.operationToDelete.set(null);
   }
 
   // Exports an operation to PDF format using the PDF export service
