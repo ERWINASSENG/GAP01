@@ -726,6 +726,29 @@ export class CahierComponent implements OnInit {
       }));
   });
 
+  getDayGroupTotalQte(ops: Operation[]): number {
+    let total = 0;
+    ops.forEach(op => {
+      if (op && op.items && Array.isArray(op.items)) {
+        op.items.forEach(item => {
+          total += Number(item.qte) || 0;
+        });
+      }
+    });
+    return total;
+  }
+
+  getDayGroupTotalMontant(ops: Operation[]): number {
+    let total = 0;
+    ops.forEach(op => {
+      if (op && op.items && Array.isArray(op.items)) {
+        op.items.forEach(item => {
+          total += Number(item.montant) || 0;
+        });
+      }
+    });
+    return total;
+  }
 
 }
 

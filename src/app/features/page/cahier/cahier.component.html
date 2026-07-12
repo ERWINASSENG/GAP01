@@ -768,6 +768,32 @@
                       }
                     }
                   </tbody>
+                  <tfoot>
+                    <tr class="bg-slate-100 dark:bg-slate-950 font-bold text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-slate-700">
+                      @if (selectedSummary()?.type === 'Chargement Camions') {
+                        <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                        </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                      } @else if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') {
+                        <td colspan="4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                        </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                      } @else {
+                        <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                        </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                      }
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
