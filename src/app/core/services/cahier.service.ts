@@ -324,7 +324,7 @@ export class CahierService {
   }
 
   /**
-   * Groups operations into Monthly summaries
+   * Groups operations into Monthly summaries by Month and Site
    */
   readonly monthlySummaries = computed<MonthlySummary[]>(() => {
     const ops = this._operations();
@@ -345,7 +345,7 @@ export class CahierService {
       ];
       const monthFrench = monthsFrench[monthNum - 1] || 'Inconnu';
       const monthYearKey = `${monthFrench} ${year}`;
-      const groupKey = `${monthYearKey}_${op.site}_${op.type}`;
+      const groupKey = `${monthYearKey}_${op.site}`;
 
       if (!groups[groupKey]) {
         groups[groupKey] = [];
@@ -354,12 +354,12 @@ export class CahierService {
     });
 
     return Object.keys(groups).map(key => {
-      const [month, site, type] = key.split('_');
+      const [month, site] = key.split('_');
       const operations = groups[key];
       return {
         month,
         site,
-        type,
+        type: '',
         count: operations.length,
         operations
       };

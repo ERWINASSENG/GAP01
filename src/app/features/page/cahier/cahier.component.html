@@ -589,14 +589,13 @@
               <thead>
                 <!-- Top Header Row -->
                 <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-bold tracking-wider uppercase">
-                  <th class="px-6 py-3 text-center border border-slate-300 dark:border-slate-700" colspan="5">
+                  <th class="px-6 py-3 text-center border border-slate-300 dark:border-slate-700" colspan="4">
                     SYNTHÈSE MENSUELLE GLOBALE DES OPÉRATIONS
                   </th>
                 </tr>
                 <tr class="bg-slate-50 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider text-xs">
                   <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Mois / Période</th>
                   <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Site d'Opération</th>
-                  <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Type de Service</th>
                   <th class="px-6 py-3 border border-slate-300 dark:border-slate-700">Opérations enregistrées</th>
                   <th class="px-6 py-3 border border-slate-300 dark:border-slate-700 text-right">Détails</th>
                 </tr>
@@ -610,36 +609,11 @@
                     <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
                       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-medium text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-700/50">
                         <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center text-slate-400 dark:text-slate-500">place</mat-icon>
-                        {{ summary.site }}
+                        Site {{ summary.site }}
                       </span>
                     </td>
-                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
-                      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border"
-                        [ngClass]="{
-                          'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20': summary.type === 'Chargement' || summary.type === 'Chargement Camions' || summary.type === 'Chargement des wagons' || summary.type === 'Chargement wagons',
-                          'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20': summary.type === 'Déchargement',
-                          'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20': summary.type === 'Surmontage' || summary.type === 'Reconditionnement',
-                          'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20': summary.type === 'Transfert',
-                          'bg-pink-500/10 text-pink-600 dark:text-pink-400 border-pink-500/20': summary.type === 'Son',
-                          'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20': summary.type === 'Nettoyage'
-                        }">
-                        <mat-icon class="text-[14px] w-3.5 h-3.5 flex items-center justify-center">
-                          {{ 
-                            (summary.type === 'Chargement' || summary.type === 'Chargement Camions') ? 'unarchive' :
-                            summary.type === 'Déchargement' ? 'archive' :
-                            summary.type === 'Surmontage' ? 'layers' :
-                            summary.type === 'Transfert' ? 'local_shipping' : 
-                            (summary.type === 'Chargement des wagons' || summary.type === 'Chargement wagons') ? 'train' :
-                            summary.type === 'Reconditionnement' ? 'sync' :
-                            summary.type === 'Nettoyage' ? 'cleaning_services' : 'grain'
-                          }}
-                        </mat-icon>
-                        {{ summary.type }}
-                      </span>
-                    </td>
-                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700">
-                      <span class="font-mono font-bold text-slate-900 dark:text-white">{{ summary.count }}</span>
-                      <span class="text-slate-400 dark:text-slate-500 text-xs ml-1">opération(s)</span>
+                    <td class="px-6 py-4 border border-slate-300 dark:border-slate-700 font-semibold text-slate-900 dark:text-white">
+                      Opérations enregistrées ({{ summary.count }})
                     </td>
                     <td class="px-6 py-4 border border-slate-300 dark:border-slate-700 text-right">
                       <button 
@@ -658,7 +632,7 @@
         }
       </div>
     } @else {
-      <!-- 2. VUE DÉTAILLÉE PAR SEMAINE / JOUR -->
+      <!-- 2. VUE DÉTAILLÉE PAR TYPES D'OPÉRATIONS -->
       <div class="space-y-6" id="detailed-view-container">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" id="detailed-header">
           <div class="flex items-center gap-3">
@@ -677,46 +651,35 @@
           </div>
         </div>
 
-        <!-- Organisation des données par Jour -->
-        <div class="space-y-6" id="detailed-days-wrapper">
-          @for (dayGroup of detailedDays(); track dayGroup.date) {
-            <div class="w-full overflow-hidden" id="day-group-{{dayGroup.date}}">
-              <!-- Day Banner -->
-              <div class="bg-slate-50 dark:bg-slate-950 px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 dark:text-white text-sm sm:text-base flex items-center gap-2">
-                  <mat-icon class="text-indigo-500 dark:text-indigo-400 text-sm">today</mat-icon>
-                  {{ dayGroup.dateLabel }}
-                </h3>
-                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-200/50 dark:bg-slate-800 px-2.5 py-1 rounded-md">
-                  {{ dayGroup.ops.length }} opération(s)
-                </span>
-              </div>
-
-              <!-- Operations of the day -->
+        <!-- Organisation des données par Tableaux distincts de Types d'Opérations -->
+        <div class="space-y-8" id="detailed-types-wrapper">
+          @for (group of detailedTypeGroups(); track group.type) {
+            <div class="w-full overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs" id="type-group-{{group.type}}">
+              <!-- Operations of the type -->
               <div class="overflow-x-auto">
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="selectedSummary()?.type === 'Chargement Camions' ? 6 : ((selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') ? 7 : 6)">
-                        {{ selectedSummary()?.type | uppercase }}{{ selectedSummary()?.site === 'AUTRE' ? '' : ' ' + (selectedSummary()?.site | uppercase) }}
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="(group.type === 'Chargement' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') ? 7 : 6">
+                        {{ group.type | uppercase }}{{ selectedSummary()?.site === 'AUTRE' ? '' : ' ' + (selectedSummary()?.site | uppercase) }}
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
-                      @if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement Camions' || selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') {
-                        @if (selectedSummary()?.type === 'Chargement Camions') {
+                      @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
+                        @if (group.type === 'Chargement Camions') {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Camions</th>
-                        } @else if (selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') {
+                        } @else if (group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">N° Wagon / Nbr sacs</th>
                         } @else {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
                         }
                       }
-                      @if (selectedSummary()?.type !== 'Chargement Camions') {
+                      @if (group.type !== 'Chargement Camions') {
                         <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
                       }
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
-                        {{ selectedSummary()?.type === 'Chargement Camions' ? 'Tonnage' : 'Qte' }}
+                        {{ group.type === 'Chargement Camions' ? 'Tonnage' : 'Qte' }}
                       </th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Montant</th>
@@ -724,18 +687,18 @@
                     </tr>
                   </thead>
                   <tbody class="text-slate-700 dark:text-slate-200">
-                    @for (op of dayGroup.ops; track op.id) {
+                    @for (op of group.ops; track op.id) {
                       @for (item of op.items; track $index; let idx = $index; let len = $count) {
                         <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800">
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
-                          @if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement Camions' || selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') {
+                          @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
                               {{ item.dn }}
                             </td>
                           }
-                          @if (selectedSummary()?.type !== 'Chargement Camions') {
+                          @if (group.type !== 'Chargement Camions') {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
                               {{ item.produit }}
                             </td>
@@ -750,7 +713,7 @@
                             {{ item.montant | number }}
                           </td>
                           @if (idx === 0) {
-                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle">
+                            <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle bg-slate-50/10">
                               <div class="flex items-center gap-2 justify-center">
                                 <button 
                                   (click)="exportToPdf(op)"
@@ -782,25 +745,24 @@
                   </tbody>
                   <tfoot>
                     <tr class="bg-slate-100 dark:bg-slate-950 font-bold text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-slate-700">
-                      @if (selectedSummary()?.type === 'Chargement Camions') {
+                      @if (group.type === 'Chargement Camions') {
                         <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
-                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                          {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
-                      } @else if (selectedSummary()?.type === 'Chargement' || selectedSummary()?.type === 'Chargement des wagons' || selectedSummary()?.type === 'Chargement wagons') {
+                      } @else if (group.type === 'Chargement' || group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
                         <td colspan="4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                          {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                       } @else {
                         <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {{ getDayGroupTotalMontant(dayGroup.ops) | number }}
+                          {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                       }

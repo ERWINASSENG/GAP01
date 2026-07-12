@@ -36,7 +36,7 @@ export class CahierComponent implements OnInit {
   // UI state signals
   readonly isCreationPageOpen = signal<boolean>(false);
   readonly currentStep = signal<number>(1); // Step 1: Site, Step 2: Type, Step 3: Form & Table
-  readonly selectedSummaryKeys = signal<{ month: string; site: string; type: string } | null>(null);
+  readonly selectedSummaryKeys = signal<{ month: string; site: string } | null>(null);
   readonly isSaving = signal<boolean>(false);
   readonly operationToDelete = signal<string | null>(null);
 
@@ -58,7 +58,7 @@ export class CahierComponent implements OnInit {
       ];
       const monthFrench = monthsFrench[monthNum - 1] || 'Inconnu';
       const key = `${monthFrench} ${year}`;
-      return key === keys.month && o.site === keys.site && o.type === keys.type;
+      return key === keys.month && o.site === keys.site;
     });
 
     if (filteredOps.length === 0) {
@@ -68,7 +68,7 @@ export class CahierComponent implements OnInit {
     return {
       month: keys.month,
       site: keys.site,
-      type: keys.type,
+      type: '',
       count: filteredOps.length,
       operations: filteredOps
     };
@@ -709,8 +709,7 @@ export class CahierComponent implements OnInit {
   showDetail(summary: MonthlySummary) {
     this.selectedSummaryKeys.set({
       month: summary.month,
-      site: summary.site,
-      type: summary.type
+      site: summary.site
     });
   }
 
@@ -719,46 +718,60 @@ export class CahierComponent implements OnInit {
     this.selectedSummaryKeys.set(null);
   }
 
-  // Returns operations grouped by day of the week for detailed view
-  readonly detailedDays = computed(() => {
+  // Groups operations by type for the detailed view, sorted by chronological order of their first entry (saisie)
+  readonly detailedTypeGroups = computed(() => {
     const summary = this.selectedSummary();
     if (!summary) return [];
 
-    const daysFrench = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    
-    // Group operations by exact date
-    const groups: Record<string, { dateLabel: string; ops: Operation[] }> = {};
+    const ops = [...summary.operations];
 
-    summary.operations.forEach(op => {
-      if (!op || !op.date || typeof op.date !== 'string') return;
-      const d = new Date(op.date);
-      if (isNaN(d.getTime())) return;
-      const dayName = daysFrench[d.getDay()];
-      const dayNum = d.getDate();
-      const monthNames = [
-        'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
-        'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'
-      ];
-      const monthName = monthNames[d.getMonth()];
-      const dateLabel = `${dayName} ${dayNum === 1 ? '01er' : dayNum} ${monthName}`;
+    // Helper to get sortable ISO time string from operation date and time
+    const getOpTime = (op: Operation) => {
+      const date = op.date || '';
+      const heure = op.heure || '00:00';
+      return `${date}T${heure}`;
+    };
 
-      if (!groups[op.date]) {
-        groups[op.date] = { dateLabel, ops: [] };
+    // Group by operation type
+    const groups: Record<string, Operation[]> = {};
+    ops.forEach(op => {
+      const type = op.type;
+      if (!groups[type]) {
+        groups[type] = [];
       }
-      groups[op.date].ops.push(op);
+      groups[type].push(op);
     });
 
-    // Sort by date ascending or descending as needed
-    return Object.keys(groups)
-      .sort((a, b) => b.localeCompare(a))
-      .map(dateKey => ({
-        date: dateKey,
-        dateLabel: groups[dateKey].dateLabel,
-        ops: groups[dateKey].ops
-      }));
+    // Sort types based on the oldest (earliest) operation date/time in each type
+    const sortedTypes = Object.keys(groups).sort((typeA, typeB) => {
+      const opsA = groups[typeA];
+      const opsB = groups[typeB];
+
+      const earliestA = opsA.reduce((earliest, curr) => {
+        return getOpTime(curr) < getOpTime(earliest) ? curr : earliest;
+      }, opsA[0]);
+
+      const earliestB = opsB.reduce((earliest, curr) => {
+        return getOpTime(curr) < getOpTime(earliest) ? curr : earliest;
+      }, opsB[0]);
+
+      return getOpTime(earliestA).localeCompare(getOpTime(earliestB));
+    });
+
+    return sortedTypes.map(type => {
+      // Sort operations inside this type chronologically descending (newest first for readability)
+      const sortedOps = groups[type].sort((a, b) => {
+        return getOpTime(b).localeCompare(getOpTime(a));
+      });
+
+      return {
+        type,
+        ops: sortedOps
+      };
+    });
   });
 
-  getDayGroupTotalQte(ops: Operation[]): number {
+  getGroupTotalQte(ops: Operation[]): number {
     let total = 0;
     ops.forEach(op => {
       if (op && op.items && Array.isArray(op.items)) {
@@ -770,7 +783,7 @@ export class CahierComponent implements OnInit {
     return total;
   }
 
-  getDayGroupTotalMontant(ops: Operation[]): number {
+  getGroupTotalMontant(ops: Operation[]): number {
     let total = 0;
     ops.forEach(op => {
       if (op && op.items && Array.isArray(op.items)) {
