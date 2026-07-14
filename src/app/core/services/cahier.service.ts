@@ -103,7 +103,7 @@ export class CahierService {
     }
   }
 
-  private mapDatabaseOperations(data: any[]): Operation[] {
+  private mapDatabaseOperations(data: Record<string, unknown>[]): Operation[] {
     return data.map(dbOp => {
       const isDraftVal = dbOp['isdraft'] !== undefined ? dbOp['isdraft'] : (dbOp['isDraft'] !== undefined ? dbOp['isDraft'] : false);
       const sonLevelVal = dbOp['sonlevel'] !== undefined ? dbOp['sonlevel'] : (dbOp['sonLevel'] || 'Moyen');
@@ -120,12 +120,12 @@ export class CahierService {
         collaborateur: (dbOp['collaborateur'] as string) || 'Collaborateur',
         isDraft: isDraftVal as boolean,
         user_id: dbOp['user_id'] as string,
-        items: Array.isArray(rawItems) ? rawItems.map((item: any) => ({
-          id: item['id'] || crypto.randomUUID(),
-          date: item['date'] || dbOp['date'],
-          dn: item['dn'] || '',
-          produit: item['produit'] || '',
-          qte: Number(item['quantite']) || Number(item['qte']) || 0,
+        items: Array.isArray(rawItems) ? (rawItems as Record<string, unknown>[]).map((item) => ({
+          id: (item['id'] as string) || crypto.randomUUID(),
+          date: (item['date'] as string) || (dbOp['date'] as string),
+          dn: (item['dn'] as string) || '',
+          produit: (item['produit'] as string) || '',
+          qte: Number(item['quantite'] ?? item['qte']) || 0,
           pu: Number(item['pu']) || 0,
           montant: Number(item['montant']) || 0
         })) : []

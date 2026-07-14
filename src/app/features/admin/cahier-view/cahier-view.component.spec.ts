@@ -7,8 +7,8 @@ import { signal } from '@angular/core';
 describe('AdminCahierViewComponent', () => {
   let component: AdminCahierViewComponent;
   let fixture: ComponentFixture<AdminCahierViewComponent>;
-  let mockCahierService: any;
-  let mockPdfExportService: any;
+  let mockCahierService: Partial<CahierService>;
+  let mockPdfExportService: Partial<PdfExportService>;
 
   beforeEach(async () => {
     mockCahierService = {

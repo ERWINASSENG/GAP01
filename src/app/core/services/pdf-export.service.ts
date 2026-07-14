@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Operation } from '../../shared/models/cahier.model';
+import { Operation, MonthlySummary, OperationItem } from '../../shared/models/cahier.model';
 
 interface JspdfExtended {
   lastAutoTable?: {
@@ -396,7 +396,7 @@ export class PdfExportService {
   /**
    * Génère et télécharge un rapport PDF récapitulatif mensuel pour un site.
    */
-  exportMonthlySummary(summary: any): void {
+  exportMonthlySummary(summary: MonthlySummary): void {
     const doc = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -418,12 +418,12 @@ export class PdfExportService {
 
     // Table
     const headers = [['Date', 'Collaborateur', 'Type', 'Détails', 'Items']];
-    const data = summary.operations.map((op: any) => [
+    const data = summary.operations.map((op: Operation) => [
       `${op.date} ${op.heure}`,
       op.collaborateur || '-',
       op.type,
       op.details || '-',
-      (op.items || []).map((i: any) => `${i.produit}: ${i.qte}`).join('\n')
+      (op.items || []).map((i: OperationItem) => `${i.produit}: ${i.qte}`).join('\n')
     ]);
 
     autoTable(doc, {

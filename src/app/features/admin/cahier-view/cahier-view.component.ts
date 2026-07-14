@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { CahierService } from '../../../core/services/cahier.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
+import { MonthlySummary } from '../../../shared/models/cahier.model';
 
 @Component({
   selector: 'app-admin-cahier-view',
@@ -16,7 +17,7 @@ export class AdminCahierViewComponent {
 
   readonly summaries = this.cahierService.adminMonthlySummaries;
 
-  exportToPdf(summary: any) {
+  exportToPdf(summary: MonthlySummary) {
     this.pdfExportService.exportMonthlySummary(summary);
   }
 }

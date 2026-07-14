@@ -85,7 +85,7 @@
                             typeOption === 'Déchargement' ? 'archive' :
                             typeOption === 'Surmontage' ? 'layers' :
                             typeOption === 'Transfert' ? 'local_shipping' : 
-                            typeOption === 'Chargement des wagons' ? 'train' :
+                            typeOption === 'Chargement des wagons' || typeOption === 'Chargement Wagon Blé' || typeOption === 'Chargement Wagon Farine' ? 'train' :
                             typeOption === 'Chargement wagons' ? 'train' :
                             typeOption === 'Reconditionnement' ? 'sync' :
                             typeOption === 'Nettoyage' ? 'cleaning_services' : 'grain'
@@ -162,7 +162,7 @@
                       <!-- Table Title Row matching the screenshot -->
                       <tr class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 font-bold uppercase tracking-wider text-center text-sm">
                         <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700" [attr.colspan]="tableColspan()">
-                          @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons') {
+                          @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons' || operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.type === 'Chargement Wagon Farine') {
                             CHARGEMENT WAGONS {{ (operationForm.value.produit || '') | uppercase }}@if (operationForm.value.site !== 'AUTRE') { {{ ' ' + (operationForm.value.site || 'SCMC') | uppercase }} }
                           } @else {
                             {{ (operationForm.value.type || 'Chargement') | uppercase }}@if (operationForm.value.site !== 'AUTRE') { {{ ' ' + (operationForm.value.site || 'SCMC') | uppercase }} }
@@ -172,8 +172,8 @@
                       <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider text-center">
                         <th class="py-3 px-3 sm:py-3 sm:px-4 w-36 border border-slate-300 dark:border-slate-700 text-center">DATE</th>
                         
-                        @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons') {
-                          @if (operationForm.value.produit === 'Blé') {
+                        @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons' || operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.type === 'Chargement Wagon Farine') {
+                          @if (operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.produit === 'Blé') {
                             <!-- CHARGEMENT WAGONS BLE: DATE, N° WAGON, TONNAGE, PU, MONTANT -->
                             <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">N° WAGON</th>
                             <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">TONNAGE</th>
@@ -203,7 +203,9 @@
                               </div>
                             </th>
                           }
-                          <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">PRODUIT</th>
+                          <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center min-w-[150px] max-w-[300px]">
+                            {{ operationForm.value.type === 'Reconditionnement' ? 'DÉSIGNATION' : 'PRODUIT' }}
+                          </th>
                           <th class="py-3 px-3 sm:py-3 sm:px-4 w-24 border border-slate-300 dark:border-slate-700 text-center">QTE</th>
                         }
 
@@ -224,8 +226,8 @@
                             />
                           </td>
 
-                          @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons') {
-                            @if (operationForm.value.produit === 'Blé') {
+                          @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons' || operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.type === 'Chargement Wagon Farine') {
+                            @if (operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.produit === 'Blé') {
                               <!-- N° WAGON (input mapped to dnNumber) -->
                               <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                                 <input 
@@ -300,15 +302,29 @@
                                 </div>
                               </td>
                             }
-                            <!-- Standard PRODUIT -->
-                            <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
-                              <input 
-                                type="text" 
-                                formControlName="produit"
-                                placeholder="ex. Ciment"
-                                class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
-                              />
-                            </td>
+                            <!-- Standard PRODUIT / DÉSIGNATION -->
+                            @if (operationForm.value.type !== 'Reconditionnement' || $index === 0) {
+                              <td 
+                                class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center align-middle whitespace-normal break-words min-w-[150px] max-w-[300px]"
+                                [attr.rowspan]="operationForm.value.type === 'Reconditionnement' ? itemsFormArray.length : null"
+                              >
+                                @if (operationForm.value.type === 'Reconditionnement') {
+                                  <textarea 
+                                    formControlName="produit"
+                                    rows="2"
+                                    placeholder="Désignation..."
+                                    class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20 resize-y min-h-[60px]"
+                                  ></textarea>
+                                } @else {
+                                  <input 
+                                    type="text" 
+                                    formControlName="produit"
+                                    placeholder="ex. Ciment"
+                                    class="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-center text-slate-900 dark:text-white focus:outline-hidden focus:ring-1 focus:ring-indigo-500/20"
+                                  />
+                                }
+                              </td>
+                            }
                             <!-- Standard QTE -->
                             <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                               <input 
@@ -358,7 +374,7 @@
                     </tbody>
                     <tfoot>
                       <tr class="bg-slate-50 dark:bg-slate-950 font-bold text-slate-900 dark:text-white">
-                        @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons') {
+                        @if (operationForm.value.type === 'Chargement des wagons' || operationForm.value.type === 'Chargement wagons' || operationForm.value.type === 'Chargement Wagon Blé' || operationForm.value.type === 'Chargement Wagon Farine') {
                           <!-- CHARGEMENT WAGONS: DATE & N° WAGON (colspan 2), TONNAGE/SACS (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
                           <td colspan="2" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
                           <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
@@ -652,7 +668,8 @@
         <div class="space-y-12 pb-12" id="detailed-types-wrapper">
           @for (group of detailedTypeGroups(); track group.type) {
             @let isWagon = group.type.toLowerCase().includes('wagon');
-            @let isFarineWagon = isWagon && group.product?.toLowerCase()?.includes('farine');
+            @let isBleWagon = group.type === 'Chargement Wagon Blé' || (isWagon && group.product === 'Blé');
+            @let isFarineWagon = group.type === 'Chargement Wagon Farine' || (isWagon && group.product?.toLowerCase()?.includes('farine'));
             @let showDn = group.type === 'Chargement' && (selectedSummary()?.site === 'AFISA' || selectedSummary()?.site === 'SCMC');
             
             <div class="w-full" id="type-group-{{group.type}}">
@@ -661,7 +678,7 @@
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="isFarineWagon ? 6 : (showDn || isWagon ? 7 : 6)">
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="showDn ? 7 : 6">
                         @if (group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
                           CHARGEMENT WAGONS {{ (group.product || '') | uppercase }}@if (selectedSummary()?.site !== 'AUTRE') { {{ ' ' + (selectedSummary()?.site || 'SCMC') | uppercase }} }
                         } @else {
@@ -680,11 +697,13 @@
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">DN / LTI / ISTI</th>
                         }
                       }
-                      @if (group.type !== 'Chargement Camions' && !isFarineWagon) {
-                        <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Produit</th>
+                      @if (group.type !== 'Chargement Camions' && !isWagon) {
+                        <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
+                          {{ group.type === 'Reconditionnement' ? 'Désignation' : 'Produit' }}
+                        </th>
                       }
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
-                        {{ group.type === 'Chargement Camions' ? 'Tonnage' : (isFarineWagon ? 'Nbr sacs' : 'Qte') }}
+                        {{ group.type === 'Chargement Camions' || isBleWagon ? 'Tonnage' : (isFarineWagon ? 'Nbr sacs' : 'Qte') }}
                       </th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">PU (FCFA)</th>
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Montant (FCFA)</th>
@@ -703,10 +722,15 @@
                               {{ item.dn }}
                             </td>
                           }
-                          @if (group.type !== 'Chargement Camions' && !isFarineWagon) {
-                            <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">
-                              {{ item.produit }}
-                            </td>
+                          @if (group.type !== 'Chargement Camions' && !isWagon) {
+                            @if (group.type !== 'Reconditionnement' || idx === 0) {
+                              <td 
+                                class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center align-middle bg-slate-50/5 whitespace-normal break-words min-w-[150px] max-w-[300px]"
+                                [attr.rowspan]="group.type === 'Reconditionnement' ? len : null"
+                              >
+                                {{ item.produit }}
+                              </td>
+                            }
                           }
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center font-medium">
                             {{ item.qte | number }}
@@ -767,10 +791,11 @@
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                       } @else if (isWagon) {
-                        <td [attr.colspan]="isFarineWagon ? 2 : 3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
-                        <td colspan="2" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
+                        <td colspan="2" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
                           {{ getGroupTotalQte(group.ops) | number }}
                         </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
                           {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
