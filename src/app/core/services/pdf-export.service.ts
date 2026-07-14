@@ -158,15 +158,35 @@ export class PdfExportService {
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text('LIGNES DE CHARGEMENT DÉTAILLÉES', 14, 96);
 
-      let headers = [['Date', 'DN / LTI / ISTI', 'Produit', 'Qte (t)', 'PU (FCFA)', 'Montant (FCFA)']];
-      let colStyles: Record<number, { cellWidth: number, halign?: 'left' | 'right' | 'center' }> = {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 40, halign: 'left' },
-        3: { cellWidth: 22, halign: 'right' },
-        4: { cellWidth: 25, halign: 'right' },
-        5: { cellWidth: 35, halign: 'right' }
-      };
+      const showDn = (op.type === 'Chargement' && (op.site === 'AFISA' || op.site === 'SCMC')) || 
+                    op.type === 'Chargement des wagons' || 
+                    op.type === 'Chargement wagons';
+
+      let labelDn = 'DN / LTI / ISTI';
+      if (op.type === 'Chargement des wagons' || op.type === 'Chargement wagons') {
+        labelDn = 'N° Wagon';
+      }
+
+      let headers = showDn 
+        ? [['Date', labelDn, 'Produit', 'Qte (t)', 'PU (FCFA)', 'Montant (FCFA)']]
+        : [['Date', 'Produit', 'Qte (t)', 'PU (FCFA)', 'Montant (FCFA)']];
+
+      let colStyles: Record<number, { cellWidth: number, halign?: 'left' | 'right' | 'center' }> = showDn
+        ? {
+            0: { cellWidth: 25 },
+            1: { cellWidth: 35 },
+            2: { cellWidth: 40, halign: 'left' },
+            3: { cellWidth: 22, halign: 'right' },
+            4: { cellWidth: 25, halign: 'right' },
+            5: { cellWidth: 35, halign: 'right' }
+          }
+        : {
+            0: { cellWidth: 30 },
+            1: { cellWidth: 50, halign: 'left' },
+            2: { cellWidth: 30, halign: 'right' },
+            3: { cellWidth: 32, halign: 'right' },
+            4: { cellWidth: 40, halign: 'right' }
+          };
 
       if (op.type === 'Chargement Camions') {
         headers = [['Date', 'Camions', 'Tonnage (t)', 'PU (FCFA)', 'Montant (FCFA)']];
@@ -189,9 +209,18 @@ export class PdfExportService {
             item.montant.toLocaleString('fr-FR')
           ];
         }
+        if (showDn) {
+          return [
+            this.formatFrenchDate(item.date),
+            item.dn || '-',
+            item.produit || '-',
+            item.qte.toLocaleString('fr-FR'),
+            item.pu.toLocaleString('fr-FR'),
+            item.montant.toLocaleString('fr-FR')
+          ];
+        }
         return [
           this.formatFrenchDate(item.date),
-          item.dn || '-',
           item.produit || '-',
           item.qte.toLocaleString('fr-FR'),
           item.pu.toLocaleString('fr-FR'),
@@ -211,15 +240,44 @@ export class PdfExportService {
           '',
           totalMontant.toLocaleString('fr-FR')
         ]);
+      } else if (op.type === 'Chargement') {
+        if (showDn) {
+          data.push([
+            'TOTAL',
+            '',
+            '',
+            '',
+            '',
+            totalMontant.toLocaleString('fr-FR')
+          ]);
+        } else {
+          data.push([
+            'TOTAL',
+            '',
+            '',
+            '',
+            totalMontant.toLocaleString('fr-FR')
+          ]);
+        }
       } else {
-        data.push([
-          'TOTAL',
-          '',
-          '',
-          totalQte.toLocaleString('fr-FR'),
-          '',
-          totalMontant.toLocaleString('fr-FR')
-        ]);
+        if (showDn) {
+          data.push([
+            'TOTAL',
+            '',
+            '',
+            totalQte.toLocaleString('fr-FR'),
+            '',
+            totalMontant.toLocaleString('fr-FR')
+          ]);
+        } else {
+          data.push([
+            'TOTAL',
+            '',
+            totalQte.toLocaleString('fr-FR'),
+            '',
+            totalMontant.toLocaleString('fr-FR')
+          ]);
+        }
       }
 
       autoTable(doc, {

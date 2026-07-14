@@ -117,57 +117,83 @@ export class CahierComponent implements OnInit {
   }
 
   createItemFormGroup(date = '', dn = '', produit = '', qte: number | null = null, pu: number | null = null, montant: number | null = null): FormGroup {
-    let prefix = this.globalDnPrefix();
+    const currentSite = this.operationForm.controls.site.value || '';
+    const currentType = this.operationForm.controls.type.value || '';
+    const isPrefixRequired = currentType === 'Chargement' && (currentSite === 'AFISA' || currentSite === 'SCMC');
+
+    let prefix = isPrefixRequired ? this.globalDnPrefix() : '';
     let num = '';
     if (dn) {
       const upperDn = dn.toUpperCase().trim();
-      if (upperDn.startsWith('LTI ')) {
-        prefix = 'LTI';
-        num = dn.slice(4).trim();
-      } else if (upperDn.startsWith('ISTI ')) {
-        prefix = 'ISTI';
-        num = dn.slice(5).trim();
-      } else if (upperDn.startsWith('DN ')) {
-        prefix = 'DN';
-        num = dn.slice(3).trim();
-      } else {
-        const spaceIdx = dn.indexOf(' ');
-        if (spaceIdx !== -1) {
-          const possiblePrefix = dn.slice(0, spaceIdx).toUpperCase();
-          if (['DN', 'LTI', 'ISTI'].includes(possiblePrefix)) {
-            prefix = possiblePrefix;
-            num = dn.slice(spaceIdx + 1).trim();
-          } else {
-            prefix = this.globalDnPrefix();
-            num = dn.trim();
-          }
+      if (isPrefixRequired) {
+        if (upperDn.startsWith('LTI ')) {
+          prefix = 'LTI';
+          num = dn.slice(4).trim();
+        } else if (upperDn.startsWith('ISTI ')) {
+          prefix = 'ISTI';
+          num = dn.slice(5).trim();
+        } else if (upperDn.startsWith('DN ')) {
+          prefix = 'DN';
+          num = dn.slice(3).trim();
         } else {
-          if (upperDn.startsWith('LTI')) {
-            prefix = 'LTI';
-            num = dn.slice(3).trim();
-          } else if (upperDn.startsWith('ISTI')) {
-            prefix = 'ISTI';
-            num = dn.slice(4).trim();
-          } else if (upperDn.startsWith('DN')) {
-            prefix = 'DN';
-            num = dn.slice(2).trim();
+          const spaceIdx = dn.indexOf(' ');
+          if (spaceIdx !== -1) {
+            const possiblePrefix = dn.slice(0, spaceIdx).toUpperCase();
+            if (['DN', 'LTI', 'ISTI'].includes(possiblePrefix)) {
+              prefix = possiblePrefix;
+              num = dn.slice(spaceIdx + 1).trim();
+            } else {
+              prefix = this.globalDnPrefix();
+              num = dn.trim();
+            }
           } else {
-            prefix = this.globalDnPrefix();
-            num = dn.trim();
+            if (upperDn.startsWith('LTI')) {
+              prefix = 'LTI';
+              num = dn.slice(3).trim();
+            } else if (upperDn.startsWith('ISTI')) {
+              prefix = 'ISTI';
+              num = dn.slice(4).trim();
+            } else if (upperDn.startsWith('DN')) {
+              prefix = 'DN';
+              num = dn.slice(2).trim();
+            } else {
+              prefix = this.globalDnPrefix();
+              num = dn.trim();
+            }
           }
+        }
+      } else {
+        // No prefix needed. If the existing data starts with legacy "DN ", "LTI ", or "ISTI ", strip it.
+        prefix = '';
+        if (upperDn.startsWith('DN ')) {
+          num = dn.slice(3).trim();
+        } else if (upperDn.startsWith('LTI ')) {
+          num = dn.slice(4).trim();
+        } else if (upperDn.startsWith('ISTI ')) {
+          num = dn.slice(5).trim();
+        } else if (upperDn.startsWith('DN')) {
+          num = dn.slice(2).trim();
+        } else if (upperDn.startsWith('LTI')) {
+          num = dn.slice(3).trim();
+        } else if (upperDn.startsWith('ISTI')) {
+          num = dn.slice(4).trim();
+        } else {
+          num = dn.trim();
         }
       }
     }
 
-    const currentType = this.operationForm.controls.type.value || '';
-    const isDnRequired = currentType === 'Chargement' || currentType === 'Chargement Camions' || currentType === 'Chargement des wagons' || currentType === 'Chargement wagons';
+    const isDnRequired = isPrefixRequired || 
+                         currentType === 'Chargement Camions' || 
+                         currentType === 'Chargement des wagons' || 
+                         currentType === 'Chargement wagons';
     const isProduitRequired = currentType !== 'Chargement Camions';
 
     const group = new FormGroup({
       date: new FormControl<string>(date || this.operationForm.controls.date.value || '', { validators: [Validators.required], nonNullable: true }),
-      dnPrefix: new FormControl<string>(prefix, { validators: (isDnRequired && currentType !== 'Chargement Camions') ? [Validators.required] : [], nonNullable: true }),
+      dnPrefix: new FormControl<string>(prefix, { validators: (isDnRequired && currentType === 'Chargement') ? [Validators.required] : [], nonNullable: true }),
       dnNumber: new FormControl<string>(num, { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
-      dn: new FormControl<string>(dn || `${prefix} ${num}`.toUpperCase().trim(), { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
+      dn: new FormControl<string>(dn || (isPrefixRequired ? `${prefix} ${num}`.toUpperCase().trim() : num.toUpperCase().trim()), { validators: isDnRequired ? [Validators.required] : [], nonNullable: true }),
       produit: new FormControl<string>(produit, { validators: isProduitRequired ? [Validators.required] : [], nonNullable: true }),
       qte: new FormControl<number | null>(qte, { validators: [Validators.required, Validators.min(0)] }),
       pu: new FormControl<number | null>(pu, { validators: [Validators.required, Validators.min(0)] }),
@@ -184,10 +210,12 @@ export class CahierComponent implements OnInit {
         changed = true;
       }
 
-      // Dropdown selection (dnPrefix + dnNumber) should only apply to 'Chargement' or 'Chargement des wagons' type
-      if (this.operationForm.value.type === 'Chargement' || this.operationForm.value.type === 'Chargement Camions' || this.operationForm.value.type === 'Chargement des wagons' || this.operationForm.value.type === 'Chargement wagons') {
+      // Dropdown selection (dnPrefix + dnNumber) should only apply to required fields
+      if (isDnRequired) {
         const rawNum = (v.dnNumber || '').toString().trim();
-        const calculatedDn = `${v.dnPrefix || 'DN'} ${rawNum}`.toUpperCase().trim();
+        const calculatedDn = isPrefixRequired
+          ? `${v.dnPrefix || 'DN'} ${rawNum}`.toUpperCase().trim()
+          : rawNum.toUpperCase().trim();
         if (group.controls['dn'].value !== calculatedDn) {
           group.controls['dn'].setValue(calculatedDn, { emitEvent: false });
           changed = true;
@@ -367,7 +395,8 @@ export class CahierComponent implements OnInit {
     if (val.type === 'Chargement Camions') {
       return 6;
     }
-    return val.type === 'Chargement' ? 7 : 6;
+    const isDnActive = val.type === 'Chargement' && (val.site === 'AFISA' || val.site === 'SCMC');
+    return isDnActive ? 7 : 6;
   });
 
   readonly totalColspan = computed<number>(() => {
@@ -378,7 +407,8 @@ export class CahierComponent implements OnInit {
     if (val.type === 'Chargement Camions') {
       return 4;
     }
-    return val.type === 'Chargement' ? 5 : 4;
+    const isDnActive = val.type === 'Chargement' && (val.site === 'AFISA' || val.site === 'SCMC');
+    return isDnActive ? 5 : 4;
   });
 
   getOperationTotal(op: Operation): number {

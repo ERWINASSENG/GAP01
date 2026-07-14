@@ -188,7 +188,7 @@
                           <th class="py-3 px-3 sm:py-3 sm:px-4 w-28 border border-slate-300 dark:border-slate-700 text-center">TONNAGE</th>
                         } @else {
                           <!-- Standard Types: DATE, [DN / LTI / ISTI], PRODUIT, QTE, PU, MONTANT -->
-                          @if (operationForm.value.type === 'Chargement') {
+                          @if (operationForm.value.type === 'Chargement' && (operationForm.value.site === 'AFISA' || operationForm.value.site === 'SCMC')) {
                             <th class="py-3 px-3 sm:py-3 sm:px-4 border border-slate-300 dark:border-slate-700 text-center">
                               <div class="flex items-center justify-center">
                                 <select 
@@ -285,7 +285,7 @@
                             </td>
                           } @else {
                             <!-- Standard DN Selection -->
-                            @if (operationForm.value.type === 'Chargement') {
+                            @if (operationForm.value.type === 'Chargement' && (operationForm.value.site === 'AFISA' || operationForm.value.site === 'SCMC')) {
                               <td class="py-3 px-3 sm:py-3 sm:px-3 border border-slate-300 dark:border-slate-700 text-center">
                                 <div class="flex items-center gap-2 justify-center">
                                   <span class="text-xs font-bold bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500 dark:text-slate-400 uppercase select-none">
@@ -381,7 +381,7 @@
                           </td>
                           <td class="border border-slate-300 dark:border-slate-700"></td>
                         } @else {
-                          @if (operationForm.value.type === 'Chargement') {
+                          @if (operationForm.value.type === 'Chargement' && (operationForm.value.site === 'AFISA' || operationForm.value.site === 'SCMC')) {
                             <!-- Standard CHARGEMENT: DATE, SELECTOR, PRODUIT (colspan 3), QTE (colspan 1), PU (colspan 1, empty), MONTANT (colspan 1), empty (colspan 1) -->
                             <td colspan="3" class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center text-[11px] text-slate-600 dark:text-slate-300 uppercase tracking-wider font-extrabold">TOTAL</td>
                             <td class="py-1.5 px-2 sm:py-2.5 sm:px-4 border border-slate-300 dark:border-slate-700 text-center font-mono text-indigo-600 dark:text-indigo-400 text-sm font-bold">
@@ -653,6 +653,7 @@
           @for (group of detailedTypeGroups(); track group.type) {
             @let isWagon = group.type.toLowerCase().includes('wagon');
             @let isFarineWagon = isWagon && group.product?.toLowerCase()?.includes('farine');
+            @let showDn = group.type === 'Chargement' && (selectedSummary()?.site === 'AFISA' || selectedSummary()?.site === 'SCMC');
             
             <div class="w-full" id="type-group-{{group.type}}">
               <!-- Operations of the type -->
@@ -660,17 +661,17 @@
                 <table class="w-full text-center border-collapse border border-slate-300 dark:border-slate-700 block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
                   <thead>
                     <tr class="bg-slate-100 dark:bg-slate-950 border-b border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-center font-bold tracking-wider uppercase text-xs">
-                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="isFarineWagon ? 6 : (group.type === 'Chargement' || isWagon ? 7 : 6)">
-                        @if (isWagon) {
-                          CHARGEMENT DES WAGONS{{ group.product ? ' DE ' + (group.product | uppercase) : '' }}
+                      <th class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700" [attr.colspan]="isFarineWagon ? 6 : (showDn || isWagon ? 7 : 6)">
+                        @if (group.type === 'Chargement des wagons' || group.type === 'Chargement wagons') {
+                          CHARGEMENT WAGONS {{ (group.product || '') | uppercase }}@if (selectedSummary()?.site !== 'AUTRE') { {{ ' ' + (selectedSummary()?.site || 'SCMC') | uppercase }} }
                         } @else {
-                          {{ group.type | uppercase }}{{ group.product ? ' DE ' + (group.product | uppercase) : '' }}
+                          {{ (group.type || 'Chargement') | uppercase }}@if (selectedSummary()?.site !== 'AUTRE') { {{ ' ' + (selectedSummary()?.site || 'SCMC') | uppercase }} }
                         }
                       </th>
                     </tr>
                     <tr class="bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider">
                       <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
-                      @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || isWagon) {
+                      @if (showDn || group.type === 'Chargement Camions' || isWagon) {
                         @if (group.type === 'Chargement Camions') {
                           <th class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center">Camions</th>
                         } @else if (isWagon) {
@@ -697,7 +698,7 @@
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
                             {{ item.date }}
                           </td>
-                          @if (group.type === 'Chargement' || group.type === 'Chargement Camions' || isWagon) {
+                          @if (showDn || group.type === 'Chargement Camions' || isWagon) {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
                               {{ item.dn }}
                             </td>
@@ -750,13 +751,7 @@
                   <tfoot>
                     <tr class="bg-slate-100 dark:bg-slate-950 font-bold text-slate-900 dark:text-white border-t-2 border-slate-300 dark:border-slate-700">
                       @if (group.type === 'Chargement Camions') {
-                        <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
-                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
-                          {{ getGroupTotalMontant(group.ops) | number }}
-                        </td>
-                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
-                      } @else if (group.type === 'Chargement' || isWagon) {
-                        <td [attr.colspan]="isFarineWagon ? 2 : 3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td colspan="2" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
                           {{ getGroupTotalQte(group.ops) | number }}
                         </td>
@@ -765,9 +760,23 @@
                           {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
-                      } @else {
-                        <td colspan="3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                      } @else if (group.type === 'Chargement') {
+                        <td [attr.colspan]="showDn ? 5 : 4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ getGroupTotalMontant(group.ops) | number }}
+                        </td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                      } @else if (isWagon) {
+                        <td [attr.colspan]="isFarineWagon ? 2 : 3" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
+                        <td colspan="2" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-slate-800 dark:text-slate-200">
+                          {{ getGroupTotalQte(group.ops) | number }}
+                        </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                          {{ getGroupTotalMontant(group.ops) | number }}
+                        </td>
+                        <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700"></td>
+                      } @else {
+                        <td colspan="4" class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-bold uppercase tracking-wider text-xs">TOTAL</td>
                         <td class="px-2 py-2.5 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono font-bold text-indigo-600 dark:text-indigo-400">
                           {{ getGroupTotalMontant(group.ops) | number }}
                         </td>
