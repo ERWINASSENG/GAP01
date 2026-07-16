@@ -1,4 +1,4 @@
-<div class="p-6 max-w-7xl mx-auto space-y-6" id="admin-user-create-container">
+<div class="p-6 max-w-3xl mx-auto space-y-6" id="admin-user-create-container">
   <!-- Header de la page -->
   <header class="flex flex-col md:flex-row md:items-center justify-between gap-4" id="admin-user-create-header">
     <div>
@@ -8,9 +8,9 @@
   </header>
 
   <!-- Grille principale -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="admin-user-create-grid">
+  <div class="grid grid-cols-1 gap-6" id="admin-user-create-grid">
     <!-- Formulaire (2 colonnes) -->
-    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-6 space-y-6" id="admin-user-create-card">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-6 space-y-6" id="admin-user-create-card">
       <div class="border-b border-slate-100 dark:border-slate-800/80 pb-4">
         <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Informations de sécurité</h2>
         <p class="text-xs text-slate-500 dark:text-slate-400">Remplissez les champs ci-dessous pour générer les identifiants de connexion.</p>
@@ -142,37 +142,6 @@
           </button>
         </div>
       </form>
-    </div>
-
-    <!-- Panel d'aide et d'information -->
-    <div class="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/80 p-6 space-y-6" id="admin-user-info-card">
-      <div class="space-y-4">
-        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center" id="info-icon">
-          <mat-icon>security</mat-icon>
-        </div>
-        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Contrôle des Accès</h3>
-        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-          En tant qu'administrateur, vous possédez le privilège exclusif de créer de nouveaux utilisateurs sur la plateforme PortSync Pro.
-        </p>
-      </div>
-
-      <div class="border-t border-slate-200 dark:border-slate-800/80 pt-4 space-y-4">
-        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Bonnes pratiques</h4>
-        <ul class="space-y-3 text-xs text-slate-500 dark:text-slate-400" id="info-tips-list">
-          <li class="flex gap-2">
-            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
-            <span>Utilisez une adresse e-mail professionnelle pour chaque collaborateur.</span>
-          </li>
-          <li class="flex gap-2">
-            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
-            <span>Attribuez le rôle d'administrateur uniquement aux superviseurs de quai autorisés.</span>
-          </li>
-          <li class="flex gap-2">
-            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
-            <span>Transmettez le mot de passe de manière sécurisée ; l'utilisateur pourra le modifier ultérieurement via le menu de réinitialisation.</span>
-          </li>
-        </ul>
-      </div>
     </div>
   </div>
 </div>

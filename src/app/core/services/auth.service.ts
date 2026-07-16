@@ -17,9 +17,18 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this.currentUserSignal() !== null);
   readonly userRole = computed(() => this.currentUserSignal()?.role || null);
 
+  private sessionInitPromise: Promise<void>;
+
   constructor() {
-    this.initSession();
+    this.sessionInitPromise = this.initSession();
     this.initSupabaseAuthListener();
+  }
+
+  /**
+   * Attend que la session soit initialisée (utile pour les guards lors d'un rechargement de page)
+   */
+  async waitForSession(): Promise<void> {
+    await this.sessionInitPromise;
   }
 
   /**
