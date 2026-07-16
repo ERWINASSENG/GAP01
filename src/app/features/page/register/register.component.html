@@ -1,155 +1,177 @@
-<div class="min-h-screen bg-slate-950 flex flex-col md:flex-row text-slate-100 font-sans" id="register-container">
-  <!-- Section Visuelle Gauche (Immersive) -->
-  <div class="hidden md:flex md:w-1/2 bg-cover bg-center relative" style="background-image: url('https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&q=80&w=1200')" id="register-visual-panel">
-    <div class="absolute inset-0 bg-gradient-to-tr from-slate-950 via-slate-900/70 to-transparent"></div>
-    <div class="absolute bottom-12 left-12 right-12 z-10">
-      <div class="flex items-center gap-3 mb-4">
-        <span class="material-icons text-emerald-400 text-4xl">anchor</span>
-        <h1 class="text-3xl font-bold tracking-tight">PortSync Pro</h1>
-      </div>
-      <p class="text-slate-300 text-lg leading-relaxed max-w-md">
-        Rejoignez la console d'administration et coordonnez les opérations de quai de manière fluide et sécurisée.
-      </p>
-      <div class="mt-8 flex gap-6 text-xs text-slate-400 font-mono">
-        <div>SYS.STATUS: <span class="text-emerald-400 font-bold">OPERATIONNEL</span></div>
-        <div>SECURE: <span class="text-emerald-400 font-bold">SSL ACTIVE</span></div>
-      </div>
+<div class="p-6 max-w-7xl mx-auto space-y-6" id="admin-user-create-container">
+  <!-- Header de la page -->
+  <header class="flex flex-col md:flex-row md:items-center justify-between gap-4" id="admin-user-create-header">
+    <div>
+      <h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Créer un collaborateur</h1>
+      <p class="text-slate-500 dark:text-slate-400">Enregistrez un nouveau compte utilisateur ou administrateur sur la plateforme.</p>
     </div>
-  </div>
+  </header>
 
-  <!-- Section Formulaire Droite -->
-  <div class="flex-1 flex flex-col justify-center px-6 py-12 md:px-16 lg:px-24 bg-slate-900/40 backdrop-blur-md relative" id="register-form-panel">
-    <div class="max-w-md w-full mx-auto">
-      <!-- Logo pour mobile -->
-      <div class="flex items-center gap-2 mb-8 md:hidden">
-        <span class="material-icons text-emerald-400 text-3xl">anchor</span>
-        <span class="text-xl font-bold tracking-wider">PortSync Pro</span>
+  <!-- Grille principale -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6" id="admin-user-create-grid">
+    <!-- Formulaire (2 colonnes) -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-6 space-y-6" id="admin-user-create-card">
+      <div class="border-b border-slate-100 dark:border-slate-800/80 pb-4">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Informations de sécurité</h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Remplissez les champs ci-dessous pour générer les identifiants de connexion.</p>
       </div>
 
-      <div class="mb-8">
-        <h2 class="text-2xl font-semibold tracking-tight text-white mb-2">Créer un nouveau compte</h2>
-        <p class="text-slate-400 text-sm">Créez vos identifiants pour rejoindre l'équipe d'administration portuaire.</p>
-      </div>
-
-      <!-- Message d'erreur -->
+      <!-- Messages d'alerte -->
       @if (errorMessage()) {
-        <div class="mb-6 p-4 bg-red-950/40 border border-red-800 text-red-200 text-sm rounded-xl flex items-start gap-3" id="register-error-alert">
-          <span class="material-icons text-red-400 mt-0.5">error_outline</span>
+        <div class="p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 text-red-800 dark:text-red-200 text-sm rounded-xl flex items-start gap-3" id="admin-user-create-error">
+          <mat-icon class="text-red-500 mt-0.5">error_outline</mat-icon>
           <div>
-            <strong class="font-semibold block">Échec de l'inscription</strong>
+            <strong class="font-semibold block">Échec de la création</strong>
             <span>{{ errorMessage() }}</span>
           </div>
         </div>
       }
 
-      <!-- Message de succès -->
       @if (successMessage()) {
-        <div class="mb-6 p-4 bg-emerald-950/40 border border-emerald-800 text-emerald-200 text-sm rounded-xl flex items-start gap-3" id="register-success-alert">
-          <span class="material-icons text-emerald-400 mt-0.5">check_circle_outline</span>
+        <div class="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 text-emerald-800 dark:text-emerald-200 text-sm rounded-xl flex items-start gap-3" id="admin-user-create-success">
+          <mat-icon class="text-emerald-500 mt-0.5">check_circle_outline</mat-icon>
           <div>
-            <strong class="font-semibold block">Compte créé avec succès !</strong>
+            <strong class="font-semibold block">Succès</strong>
             <span>{{ successMessage() }}</span>
           </div>
         </div>
       }
 
-      <!-- Formulaire -->
-      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4" id="register-form">
-        <div>
-          <label for="displayName" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">Nom complet</label>
-          <div class="relative">
-            <span class="material-icons text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">person_outline</span>
-            <input
-              type="text"
-              id="displayName"
-              formControlName="displayName"
-              placeholder="Jean Dupont"
-              class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
-            />
+      <!-- Formulaire principal -->
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="space-y-4" id="user-create-form">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Nom complet -->
+          <div>
+            <label for="displayName" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Nom complet</label>
+            <div class="relative">
+              <span class="material-icons text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">person_outline</span>
+              <input
+                type="text"
+                id="displayName"
+                formControlName="displayName"
+                placeholder="Ex: Jean Dupont"
+                class="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
+              />
+            </div>
+            @if (registerForm.get('displayName')?.touched && registerForm.get('displayName')?.errors?.['required']) {
+              <p class="text-xs text-red-500 mt-1">Le nom complet est requis.</p>
+            }
           </div>
-          @if (registerForm.get('displayName')?.touched && registerForm.get('displayName')?.errors?.['required']) {
-            <p class="text-xs text-red-400 mt-1">Le nom complet est requis.</p>
-          }
+
+          <!-- Rôle -->
+          <div>
+            <label for="role" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Rôle Professionnel</label>
+            <div class="relative">
+              <span class="material-icons text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">badge</span>
+              <select
+                id="role"
+                formControlName="role"
+                class="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white rounded-xl py-3 pl-10 pr-8 text-sm transition-all outline-none appearance-none"
+              >
+                <option value="user" class="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">Utilisateur / Pointeur de quai</option>
+                <option value="admin" class="bg-white dark:bg-slate-950 text-slate-900 dark:text-white">Administrateur Portuaire</option>
+              </select>
+              <span class="material-icons text-slate-400 dark:text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">expand_more</span>
+            </div>
+          </div>
         </div>
 
+        <!-- Email -->
         <div>
-          <label for="email" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">Adresse Email</label>
+          <label for="email" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Adresse Email</label>
           <div class="relative">
-            <span class="material-icons text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">alternate_email</span>
+            <span class="material-icons text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">alternate_email</span>
             <input
               type="email"
               id="email"
               formControlName="email"
-              placeholder="jean.dupont@port.sn"
-              class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
+              placeholder="Ex: jean.dupont@port.sn"
+              class="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
             />
           </div>
           @if (registerForm.get('email')?.touched && registerForm.get('email')?.errors?.['required']) {
-            <p class="text-xs text-red-400 mt-1">L'adresse email est requise.</p>
+            <p class="text-xs text-red-500 mt-1">L'adresse email est requise.</p>
           }
           @if (registerForm.get('email')?.touched && registerForm.get('email')?.errors?.['email']) {
-            <p class="text-xs text-red-400 mt-1">L'adresse email est invalide.</p>
+            <p class="text-xs text-red-500 mt-1">L'adresse email est invalide.</p>
           }
         </div>
 
+        <!-- Mot de passe -->
         <div>
-          <label for="password" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">Mot de passe</label>
+          <label for="password" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">Mot de passe temporaire</label>
           <div class="relative">
-            <span class="material-icons text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">lock_outline</span>
+            <span class="material-icons text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">lock_outline</span>
             <input
               type="password"
               id="password"
               formControlName="password"
               placeholder="••••••••••••"
-              class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
+              class="w-full bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none"
             />
           </div>
           @if (registerForm.get('password')?.touched && registerForm.get('password')?.errors?.['required']) {
-            <p class="text-xs text-red-400 mt-1">Le mot de passe est requis.</p>
+            <p class="text-xs text-red-500 mt-1">Le mot de passe est requis.</p>
           }
           @if (registerForm.get('password')?.touched && registerForm.get('password')?.errors?.['minlength']) {
-            <p class="text-xs text-red-400 mt-1">Le mot de passe doit contenir au moins 6 caractères.</p>
+            <p class="text-xs text-red-500 mt-1">Le mot de passe doit contenir au moins 6 caractères.</p>
           }
         </div>
 
-        <div>
-          <label for="role" class="block text-xs font-medium text-slate-300 uppercase tracking-wider mb-2">Rôle Professionnel</label>
-          <div class="relative">
-            <span class="material-icons text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 text-sm">badge</span>
-            <select
-              id="role"
-              formControlName="role"
-              class="w-full bg-slate-950/60 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 text-white rounded-xl py-3 pl-10 pr-4 text-sm transition-all outline-none appearance-none"
-            >
-              <option value="user" class="bg-slate-950 text-white">Utilisateur / Pointeur de quai</option>
-              <option value="admin" class="bg-slate-950 text-white">Administrateur Portuaire</option>
-            </select>
-            <span class="material-icons text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-sm">expand_more</span>
-          </div>
+        <div class="flex gap-3 justify-end pt-4" id="form-actions">
+          <a
+            routerLink="/admin/view"
+            class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-700 dark:text-slate-300 font-medium text-sm transition-all text-center cursor-pointer"
+            id="btn-cancel"
+          >
+            Retour
+          </a>
+          <button
+            type="submit"
+            [disabled]="registerForm.invalid || isLoading()"
+            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white font-medium rounded-xl text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            id="btn-submit"
+          >
+            @if (isLoading()) {
+              <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Enregistrement...</span>
+            } @else {
+              <mat-icon class="text-sm h-4 w-4 leading-none">person_add</mat-icon>
+              <span>Enregistrer</span>
+            }
+          </button>
         </div>
-
-        <button
-          type="submit"
-          [disabled]="registerForm.invalid || isLoading()"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 disabled:bg-slate-800 disabled:text-slate-600 text-slate-950 font-semibold rounded-xl py-3 text-sm transition-all flex justify-center items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/10 mt-6"
-          id="register-submit-btn"
-        >
-          @if (isLoading()) {
-            <div class="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-            <span>Création en cours...</span>
-          } @else {
-            <span class="material-icons text-sm">person_add</span>
-            <span>S'inscrire</span>
-          }
-        </button>
       </form>
+    </div>
 
-      <!-- Liens d'accès rapide -->
-      <div class="mt-8 text-center text-sm text-slate-400" id="register-links">
-        <span>Vous avez déjà un compte ? </span>
-        <a routerLink="/login" class="text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 cursor-pointer">
-          Se connecter
-        </a>
+    <!-- Panel d'aide et d'information -->
+    <div class="bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-slate-200 dark:border-slate-800/80 p-6 space-y-6" id="admin-user-info-card">
+      <div class="space-y-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center" id="info-icon">
+          <mat-icon>security</mat-icon>
+        </div>
+        <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Contrôle des Accès</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          En tant qu'administrateur, vous possédez le privilège exclusif de créer de nouveaux utilisateurs sur la plateforme PortSync Pro.
+        </p>
+      </div>
+
+      <div class="border-t border-slate-200 dark:border-slate-800/80 pt-4 space-y-4">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Bonnes pratiques</h4>
+        <ul class="space-y-3 text-xs text-slate-500 dark:text-slate-400" id="info-tips-list">
+          <li class="flex gap-2">
+            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
+            <span>Utilisez une adresse e-mail professionnelle pour chaque collaborateur.</span>
+          </li>
+          <li class="flex gap-2">
+            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
+            <span>Attribuez le rôle d'administrateur uniquement aux superviseurs de quai autorisés.</span>
+          </li>
+          <li class="flex gap-2">
+            <mat-icon class="text-indigo-500 text-sm leading-none h-4 w-4">check</mat-icon>
+            <span>Transmettez le mot de passe de manière sécurisée ; l'utilisateur pourra le modifier ultérieurement via le menu de réinitialisation.</span>
+          </li>
+        </ul>
       </div>
     </div>
   </div>

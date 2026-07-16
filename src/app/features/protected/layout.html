@@ -65,6 +65,34 @@
         <mat-icon class="text-slate-400 group-hover:text-indigo-400 transition-colors">book</mat-icon>
         <span class="text-sm">Cahier d'opérations</span>
       </a>
+
+      @if (currentUser()?.role === 'admin') {
+        <div class="pt-4 mt-4 border-t border-slate-800/60" id="sidebar-admin-section">
+          <p class="px-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">Administration</p>
+          
+          <a 
+            routerLink="/admin/view" 
+            routerLinkActive="bg-slate-800 text-white font-medium border-l-4 border-indigo-500"
+            (click)="closeSidebar()"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+            id="nav-admin-view"
+          >
+            <mat-icon class="text-slate-400 group-hover:text-indigo-400 transition-colors">admin_panel_settings</mat-icon>
+            <span class="text-sm">Vue globale</span>
+          </a>
+
+          <a 
+            routerLink="/admin/register" 
+            routerLinkActive="bg-slate-800 text-white font-medium border-l-4 border-indigo-500"
+            (click)="closeSidebar()"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all group"
+            id="nav-admin-register"
+          >
+            <mat-icon class="text-slate-400 group-hover:text-indigo-400 transition-colors">person_add</mat-icon>
+            <span class="text-sm">Créer collaborateur</span>
+          </a>
+        </div>
+      }
     </nav>
 
     <!-- User Information Profile Panel -->

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal, computed, effect } from '@angular/core';
-import { Operation, MonthlySummary } from '../../shared/models/cahier.model';
+import { Operation, MonthlySummary, WorkWeek } from '../../shared/models/cahier.model';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
 
@@ -10,27 +10,22 @@ export class CahierService {
   private readonly supabaseService = inject(SupabaseService);
   private readonly authService = inject(AuthService);
 
-  // Core state of operations using signals
+  // Core state of operations and weeks using signals
   private readonly _operations = signal<Operation[]>([]);
   private readonly _adminOperations = signal<Operation[]>([]);
+  private readonly _weeks = signal<WorkWeek[]>([]);
 
-  // Public read-only signal for operations
+  // Public read-only signals
   readonly operations = computed(() => this._operations());
   readonly adminOperations = computed(() => this._adminOperations());
-
-  /**
-   * Checks if the user is a mock/demo user (local mode only)
-   */
-  private isMockUser(userId?: string): boolean {
-    const id = userId || this.authService.currentUser()?.id;
-    return !!id && id.startsWith('usr');
-  }
+  readonly weeks = computed(() => this._weeks());
 
   constructor() {
-    // Re-load operations whenever the authenticated user changes
+    // Re-load operations and weeks whenever the authenticated user changes
     effect(() => {
       const user = this.authService.currentUser();
       this.loadInitialOperations(user?.id);
+      this.loadInitialWeeks(user?.id);
       if (user?.role === 'admin') {
         this.loadAllOperationsForAdmin();
       }
@@ -38,27 +33,152 @@ export class CahierService {
   }
 
   /**
-   * Loads initial operations from local storage and tries to fetch from Supabase if table is ready
+   * Loads initial weeks from Supabase
+   */
+  private async loadInitialWeeks(userId?: string) {
+    if (!userId) {
+      this._weeks.set([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await this.supabaseService.client
+        .from('cahier_weeks')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (!error && data) {
+        const mappedWeeks: WorkWeek[] = data.map((w: Record<string, unknown>) => ({
+          id: w['id'] as string,
+          site: w['site'] as string,
+          start_date: w['start_date'] as string,
+          end_date: w['end_date'] as string,
+          is_closed: w['is_closed'] as boolean,
+          closed_at: w['closed_at'] as string,
+          created_at: w['created_at'] as string,
+          user_id: w['user_id'] as string
+        }));
+        this._weeks.set(mappedWeeks);
+      } else if (error) {
+        console.error('❌ Erreur Supabase (Fetch semaines):', error.message);
+      }
+    } catch (err) {
+      console.error('❌ Erreur Réseau ou Supabase (semaines):', err);
+    }
+  }
+
+  /**
+   * Gets the active (not closed) week for a specific site
+   */
+  getActiveWeek(site: string): WorkWeek | undefined {
+    return this._weeks().find(w => w.site === site && !w.is_closed);
+  }
+
+  /**
+   * Initializes a new work week of 6 days for a site starting at a specific date
+   */
+  async createWeek(site: string, startDateStr: string): Promise<WorkWeek> {
+    const user = this.authService.currentUser();
+    const id = crypto.randomUUID();
+
+    // Calculate end_date = startDate + 5 days
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 5);
+    const endDateStr = endDate.toISOString().split('T')[0];
+
+    const newWeek: WorkWeek = {
+      id,
+      site,
+      start_date: startDateStr,
+      end_date: endDateStr,
+      is_closed: false,
+      user_id: user?.id,
+      created_at: new Date().toISOString()
+    };
+
+    const updated = [newWeek, ...this._weeks()];
+    this._weeks.set(updated);
+
+    try {
+      await this.supabaseService.client
+        .from('cahier_weeks')
+        .insert([{
+          id: newWeek.id,
+          site: newWeek.site,
+          start_date: newWeek.start_date,
+          end_date: newWeek.end_date,
+          is_closed: newWeek.is_closed,
+          user_id: newWeek.user_id
+        }]);
+    } catch (err) {
+      console.error('Error creating week in Supabase:', err);
+    }
+
+    return newWeek;
+  }
+
+  /**
+   * Closes an active week manually
+   */
+  async closeWeek(weekId: string): Promise<boolean> {
+    const closedAt = new Date().toISOString();
+
+    const updated = this._weeks().map(w => {
+      if (w.id === weekId) {
+        return { ...w, is_closed: true, closed_at: closedAt };
+      }
+      return w;
+    });
+
+    this._weeks.set(updated);
+
+    try {
+      const { error } = await this.supabaseService.client
+        .from('cahier_weeks')
+        .update({ is_closed: true, closed_at: closedAt })
+        .eq('id', weekId);
+
+      if (error) {
+        console.error('Error closing week in Supabase:', error.message);
+        return false;
+      }
+    } catch (err) {
+      console.error('Error closing week:', err);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates if a date can be inserted for a specific site's week
+   */
+  validateOperationDate(site: string, dateStr: string): { allowed: boolean; reason?: string; activeWeek?: WorkWeek } {
+    const active = this.getActiveWeek(site);
+    if (!active) {
+      // No active week, so we are allowed to insert (this operation will automatically create the week)
+      return { allowed: true };
+    }
+
+    // Check if the date is strictly greater than start_date + 5 days (end_date)
+    if (dateStr > active.end_date) {
+      return {
+        allowed: false,
+        reason: `La date de l'opération (${dateStr}) dépasse la semaine de travail active de 6 jours du site ${site} (du ${active.start_date} au ${active.end_date}). Veuillez d'abord clôturer cette semaine.`,
+        activeWeek: active
+      };
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Loads initial operations from Supabase if table is ready
    */
   private async loadInitialOperations(userId?: string) {
     if (!userId) {
       this._operations.set([]);
-      return;
-    }
-
-    // 1. Load from localStorage as a fast local fallback (User-specific)
-    const localData = localStorage.getItem(`portsync_operations_${userId}`);
-    if (localData) {
-      try {
-        this._operations.set(JSON.parse(localData));
-      } catch (e) {
-        console.error('Error parsing local operations', e);
-      }
-    }
-
-    // 2. Try to sync with Supabase if the table exists
-    if (this.isMockUser(userId)) {
-      console.log('ℹ️ User is a mock/demo user. Skipping Supabase sync and relying purely on localStorage.');
       return;
     }
 
@@ -71,7 +191,6 @@ export class CahierService {
       if (!error && data) {
         const mappedOps = this.mapDatabaseOperations(data);
         this._operations.set(mappedOps);
-        this.saveToLocal(mappedOps);
       } else if (error) {
         console.error('❌ Erreur Supabase (Fetch opérations):', error.message);
       }
@@ -120,6 +239,7 @@ export class CahierService {
         collaborateur: (dbOp['collaborateur'] as string) || 'Collaborateur',
         isDraft: isDraftVal as boolean,
         user_id: dbOp['user_id'] as string,
+        week_id: dbOp['week_id'] as string,
         items: Array.isArray(rawItems) ? (rawItems as Record<string, unknown>[]).map((item) => ({
           id: (item['id'] as string) || crypto.randomUUID(),
           date: (item['date'] as string) || (dbOp['date'] as string),
@@ -131,16 +251,6 @@ export class CahierService {
         })) : []
       };
     });
-  }
-
-  /**
-   * Saves operations list to localStorage (User-specific)
-   */
-  private saveToLocal(operations: Operation[]) {
-    const user = this.authService.currentUser();
-    if (user?.id) {
-      localStorage.setItem(`portsync_operations_${user.id}`, JSON.stringify(operations));
-    }
   }
 
   /**
@@ -156,10 +266,27 @@ export class CahierService {
   async addOperation(opData: Omit<Operation, 'id' | 'collaborateur'> & { id?: string }): Promise<Operation> {
     const user = this.authService.currentUser();
     const id = opData.id || crypto.randomUUID();
+
+    // 1. Validation of the date against work weeks
+    const validation = this.validateOperationDate(opData.site, opData.date);
+    if (!validation.allowed) {
+      throw new Error(validation.reason);
+    }
+
+    // 2. Automatic weekly management : find or create active week
+    let weekId = opData.week_id;
+    if (!weekId) {
+      let activeWeek = this.getActiveWeek(opData.site);
+      if (!activeWeek) {
+        activeWeek = await this.createWeek(opData.site, opData.date);
+      }
+      weekId = activeWeek.id;
+    }
     
     const finalizedOp: Operation = {
       ...opData,
       id,
+      week_id: weekId,
       collaborateur: user?.displayName || 'Collaborateur',
       user_id: user?.id,
       isDraft: false
@@ -168,9 +295,6 @@ export class CahierService {
     const filtered = this._operations().filter(op => op.id !== id);
     const updated = [finalizedOp, ...filtered];
     this._operations.set(updated);
-    this.saveToLocal(updated);
-
-    if (this.isMockUser(user?.id)) return finalizedOp;
 
     try {
       const { data: opData, error: opError } = await this.supabaseService.client
@@ -186,7 +310,8 @@ export class CahierService {
           frequence: finalizedOp.frequence,
           collaborateur: finalizedOp.collaborateur,
           isdraft: finalizedOp.isDraft,
-          user_id: finalizedOp.user_id
+          user_id: finalizedOp.user_id,
+          week_id: finalizedOp.week_id
         }])
         .select()
         .single();
@@ -201,6 +326,7 @@ export class CahierService {
           const dbItems = finalizedOp.items.map(item => ({
             id: item.id || crypto.randomUUID(),
             operation_id: finalizedOp.id,
+            date: item.date,
             dn: item.dn || '',
             produit: item.produit || '',
             quantite: Number(item.qte) || 0,
@@ -223,6 +349,14 @@ export class CahierService {
     const user = this.authService.currentUser();
     const id = opData.id || crypto.randomUUID();
     const existing = this._operations().find(o => o.id === id);
+
+    let weekId = opData.week_id;
+    if (!weekId && opData.site) {
+      const activeWeek = this.getActiveWeek(opData.site);
+      if (activeWeek) {
+        weekId = activeWeek.id;
+      }
+    }
     
     const draftOp: Operation = {
       site: opData.site || '',
@@ -238,6 +372,7 @@ export class CahierService {
       items: opData.items || [],
       ...opData,
       id,
+      week_id: weekId,
       collaborateur: user?.displayName || 'Collaborateur',
       user_id: user?.id,
       isDraft: true
@@ -251,9 +386,6 @@ export class CahierService {
     }
 
     this._operations.set(updated);
-    this.saveToLocal(updated);
-
-    if (this.isMockUser(user?.id)) return draftOp;
 
     try {
       const { data: opData, error: opError } = await this.supabaseService.client
@@ -269,7 +401,8 @@ export class CahierService {
           frequence: draftOp.frequence,
           collaborateur: draftOp.collaborateur,
           isdraft: draftOp.isDraft,
-          user_id: draftOp.user_id
+          user_id: draftOp.user_id,
+          week_id: draftOp.week_id
         }])
         .select()
         .single();
@@ -284,6 +417,7 @@ export class CahierService {
           const dbItems = draftOp.items.map(item => ({
             id: item.id || crypto.randomUUID(),
             operation_id: draftOp.id,
+            date: item.date,
             dn: item.dn || '',
             produit: item.produit || '',
             quantite: Number(item.qte) || 0,
@@ -302,12 +436,10 @@ export class CahierService {
     return draftOp;
   }
 
+
   async deleteOperation(id: string): Promise<boolean> {
     const updated = this._operations().filter(op => op.id !== id);
     this._operations.set(updated);
-    this.saveToLocal(updated);
-
-    if (this.isMockUser()) return true;
 
     try {
       await this.supabaseService.client

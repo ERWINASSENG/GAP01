@@ -149,7 +149,6 @@ export class PdfExportService {
     }
 
     // --- CONTENU DU MOUVEMENT ---
-    let finalY = 94;
 
     if (op.type === 'Chargement' || op.type === 'Chargement Camions' || op.type === 'Chargement des wagons' || op.type === 'Chargement wagons') {
       // Affichage sous forme de Tableau complet (jsPDF AutoTable)
@@ -308,9 +307,6 @@ export class PdfExportService {
         },
         margin: { left: 14, right: 14 }
       });
-
-      finalY = (doc as unknown as JspdfExtended).lastAutoTable?.finalY || 120;
-      finalY += 15;
     } else {
       // Affichage simple des détails pour les autres mouvements
       doc.setFont('Helvetica', 'bold');
@@ -347,32 +343,7 @@ export class PdfExportService {
         doc.text(`Niveau sonore : ${op.sonLevel || 'Moyen'}`, 18, 130);
         doc.text(`Fréquence : ${op.frequence || 'Basse'}`, 110, 130);
       }
-
-      finalY = 150;
     }
-
-    // S'assurer qu'on ne dépasse pas la page pour la signature
-    if (finalY > 230) {
-      doc.addPage();
-      finalY = 30;
-    }
-
-    // --- BLOCS DE SIGNATURE ---
-    doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
-    doc.setLineWidth(0.3);
-    doc.line(14, finalY, 196, finalY);
-
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    doc.text('Le Responsable d\'Opération', 30, finalY + 10);
-    doc.text('Le Chef de Poste / Validateur', 130, finalY + 10);
-
-    doc.setFont('Helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    doc.text('(Signature précédée de la mention "Lu et approuvé")', 22, finalY + 36);
-    doc.text('(Visa officiel et signature)', 140, finalY + 36);
 
     // --- PIED DE PAGE ---
     const pageCount = (doc as unknown as JspdfExtended).internal.getNumberOfPages();
@@ -404,17 +375,6 @@ export class PdfExportService {
     });
 
     const primaryColor = [15, 23, 42];
-    const secondaryColor = [71, 85, 105];
-
-    // Header
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(`RAPPORT MENSUEL DES OPÉRATIONS - ${summary.month.toUpperCase()}`, 14, 20);
-
-    doc.setFontSize(12);
-    doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-    doc.text(`Site : ${summary.site}`, 14, 28);
 
     // Table
     const headers = [['Date', 'Collaborateur', 'Type', 'Détails', 'Items']];
@@ -427,7 +387,7 @@ export class PdfExportService {
     ]);
 
     autoTable(doc, {
-      startY: 35,
+      startY: 15,
       head: headers,
       body: data,
       theme: 'striped',

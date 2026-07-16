@@ -1,5 +1,12 @@
 export type PortRole = 'admin' | 'manager' | 'user';
 
+export interface UserPermissions {
+  can_manage_vessels: boolean;
+  can_validate_operations: boolean;
+  can_view_analytics: boolean;
+  can_edit_cahier: boolean;
+}
+
 export interface PortSite {
   id: string;
   name: string;
@@ -18,6 +25,7 @@ export interface PortUser {
   avatarUrl?: string;
   assignedSiteId?: string;
   assignedSiteName?: string;
+  permissions?: UserPermissions;
 }
 
 export interface UserSession {

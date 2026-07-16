@@ -143,6 +143,29 @@
             @if (currentStep() === 3) {
               <div class="space-y-6 animate-slide-in" id="step-3-content">
 
+                <!-- Blocage de semaine d'intervention non clôturée -->
+                @if (dateValidationWarning()?.allowed === false) {
+                  <div class="p-4 bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-400 rounded-2xl flex items-start gap-3 animate-fade-in" id="wizard-blocking-warning">
+                    <mat-icon class="text-amber-600 dark:text-amber-400 shrink-0">lock</mat-icon>
+                    <div class="space-y-1">
+                      <p class="text-sm font-bold">Semaine de travail active non clôturée</p>
+                      <p class="text-xs leading-relaxed">
+                        {{ dateValidationWarning()?.reason }}
+                      </p>
+                      <div class="pt-1.5">
+                        <button 
+                          type="button" 
+                          (click)="closeWeek(dateValidationWarning()?.activeWeek?.id!)"
+                          class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                        >
+                          <mat-icon class="!text-xs !h-3.5 !w-3.5">lock_open</mat-icon>
+                          <span>Clôturer la semaine en cours</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
                 <!-- Dynamic Items Table -->
                 <div class="space-y-4" id="operation-table-section">
                   <div class="flex items-center justify-end">
@@ -518,7 +541,72 @@
     <!-- MAIN VUE SWITCHER -->
     @if (!selectedSummary()) {
       <!-- 1. VUE MENSUELLE (Cahier d'Opérations principal) -->
-      <div class="space-y-4" id="monthly-view-container">
+      <div class="space-y-6" id="monthly-view-container">
+
+        <!-- SUIVI DES SEMAINE DE TRAVAIL (6 JOURS) PAR SITE -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs" id="weekly-status-section">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-sm">
+              <mat-icon class="!text-[18px] !h-4.5 !w-4.5 flex items-center justify-center text-indigo-500">date_range</mat-icon>
+              <span>Suivi des semaines de travail actives (6 jours)</span>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (site of sites; track site) {
+              @let activeWeek = activeWeeksBySite()[site];
+              <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-xl flex flex-col justify-between hover:shadow-xs transition-all gap-3">
+                <div>
+                  <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                      Site {{ site }}
+                    </span>
+                    @if (activeWeek) {
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Active
+                      </span>
+                    } @else {
+                      <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-500">
+                        Inactive
+                      </span>
+                    }
+                  </div>
+                  
+                  @if (activeWeek) {
+                    <div class="space-y-1">
+                      <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Du {{ formatDateFr(activeWeek.start_date) }}
+                      </p>
+                      <p class="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Au {{ formatDateFr(activeWeek.end_date) }}
+                      </p>
+                      <p class="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1 leading-normal">
+                        Saisie bloquée au-delà du {{ formatDateFr(activeWeek.end_date) }}
+                      </p>
+                    </div>
+                  } @else {
+                    <p class="text-xs text-slate-400 dark:text-slate-500 italic leading-relaxed py-2">
+                      S'initialisera automatiquement lors de votre prochaine saisie d'opération.
+                    </p>
+                  }
+                </div>
+                
+                @if (activeWeek) {
+                  <button 
+                    type="button"
+                    (click)="closeWeek(activeWeek.id)"
+                    [disabled]="isSaving()"
+                    class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-xs border border-transparent"
+                  >
+                    <mat-icon class="!text-[14px] !h-3.5 !w-3.5 flex items-center justify-center">lock</mat-icon>
+                    <span>Clôturer la semaine</span>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        </div>
 
         <!-- BROUILLONS EN COURS -->
         @if (cahierService.drafts().length > 0) {
@@ -645,31 +733,180 @@
         }
       </div>
     } @else {
-      <!-- 2. VUE DÉTAILLÉE PAR TYPES D'OPÉRATIONS -->
+      <!-- 2. VUE DÉTAILLÉE (GROUPEMENT SEMAINE OU TYPE) -->
       <div class="space-y-6" id="detailed-view-container">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4" id="detailed-header">
-          <div class="flex items-center gap-3">
-            <button 
-              (click)="backToMonthly()"
-              class="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
-              aria-label="Retourner à la vue mensuelle"
-            >
-              <mat-icon class="!text-[16px] !h-4 !w-4">arrow_back</mat-icon>
-            </button>
-            <div>
-              <h2 class="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                LISTE DES MOUVEMENTS ENREGISTRÉS
-              </h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4" id="detailed-header">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div class="flex items-center gap-3">
+              <button 
+                (click)="backToMonthly()"
+                class="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg transition-all cursor-pointer border border-slate-200 dark:border-slate-700 flex items-center justify-center focus:outline-hidden"
+                aria-label="Retourner à la vue mensuelle"
+              >
+                <mat-icon class="!text-[16px] !h-4 !w-4">arrow_back</mat-icon>
+              </button>
+              <div>
+                <h2 class="text-sm font-bold text-slate-900 dark:text-white whitespace-nowrap uppercase">
+                  LISTE DES MOUVEMENTS {{ selectedSummary()?.site }}
+                </h2>
+              </div>
+            </div>
+
+            <!-- Sélecteur d'organisation (Semaine vs Type) -->
+            <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-850" id="grouping-mode-selector">
+              <button 
+                type="button"
+                (click)="detailGroupingMode.set('week')"
+                [ngClass]="{
+                  'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold': detailGroupingMode() === 'week',
+                  'text-slate-500 dark:text-slate-400 font-semibold hover:text-slate-800 dark:hover:text-slate-200': detailGroupingMode() !== 'week'
+                }"
+                class="px-3 py-1 text-xs rounded-lg transition-all cursor-pointer text-center"
+              >
+                Semaines de travail (6j)
+              </button>
+              <button 
+                type="button"
+                (click)="detailGroupingMode.set('type')"
+                [ngClass]="{
+                  'bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold': detailGroupingMode() === 'type',
+                  'text-slate-500 dark:text-slate-400 font-semibold hover:text-slate-800 dark:hover:text-slate-200': detailGroupingMode() !== 'type'
+                }"
+                class="px-3 py-1 text-xs rounded-lg transition-all cursor-pointer text-center"
+              >
+                Types d'opérations
+              </button>
             </div>
           </div>
+
+          @if (authService.currentUser()?.role === 'admin') {
+            <div class="flex items-center gap-2">
+              <button 
+                (click)="exportMonthlyToExcel()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md border border-transparent"
+                title="Exporter tout le rapport mensuel en format Excel"
+              >
+                <span>Exporter en XLSX</span>
+              </button>
+              <button 
+                (click)="exportMonthlyToDocx()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shadow-sm hover:shadow-md border border-transparent"
+                title="Exporter tout le rapport mensuel en format Word"
+              >
+                <span>Exporter en DOCX</span>
+              </button>
+            </div>
+          }
         </div>
 
-        <!-- Organisation des données par Tableaux distincts de Types d'Opérations -->
-        <div class="space-y-12 pb-12" id="detailed-types-wrapper">
+        <!-- Organisation des données -->
+        @if (detailGroupingMode() === 'week') {
+          <!-- AFFICHAGE GROUPÉ PAR SEMAINES DE TRAVAIL DE 6 JOURS -->
+          <div class="space-y-10 pb-12" id="detailed-weeks-wrapper">
+            @for (weekGroup of detailedWeekGroups(); track weekGroup.label) {
+              <div class="w-full space-y-3" id="week-group-{{$index}}">
+                
+                <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-700 dark:text-indigo-400 shadow-2xs">
+                    <mat-icon class="!text-xs !h-3.5 !w-3.5 flex items-center justify-center">date_range</mat-icon>
+                    {{ weekGroup.label }}
+                  </span>
+                  @if (weekGroup.week && !weekGroup.week.is_closed) {
+                    <button 
+                      type="button"
+                      (click)="closeWeek(weekGroup.week.id)"
+                      class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <mat-icon class="!text-[12px] !h-3 !w-3 flex items-center justify-center">lock</mat-icon>
+                      <span>Clôturer la semaine</span>
+                    </button>
+                  }
+                </div>
+
+                <div class="space-y-6">
+                  @for (op of weekGroup.ops; track op.id) {
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm bg-white dark:bg-slate-900">
+                      <!-- En-tête d'opération bien structuré -->
+                      <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                          <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
+                          Opération : {{ op.type }}
+                        </span>
+                        <span class="text-slate-500 dark:text-slate-400 font-mono text-[10px]">
+                          Réf : {{ op.id.substring(0, 8) | uppercase }}
+                        </span>
+                      </div>
+
+                      <table class="w-full text-center border-collapse text-xs sm:text-sm block md:table overflow-x-auto whitespace-nowrap md:whitespace-normal">
+                        <thead>
+                          <tr class="bg-slate-50/50 dark:bg-slate-950/20 text-slate-500 dark:text-slate-400 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">Date</th>
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">Identifiants (Wagon/Camion/DN)</th>
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">Produit / Désignation</th>
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">Quantité</th>
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">PU (FCFA)</th>
+                            <th class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center">Montant (FCFA)</th>
+                            <th class="px-4 py-3 w-16 text-center border border-slate-300 dark:border-slate-700">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody class="text-slate-700 dark:text-slate-200">
+                          @for (item of op.items; track $index; let idx = $index; let len = $count) {
+                            <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800">
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
+                                {{ formatDateFr(item.date) }}
+                              </td>
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center font-mono">
+                                {{ item.dn || '—' }}
+                              </td>
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 text-center text-slate-800 dark:text-slate-100 max-w-[200px] truncate">
+                                {{ item.produit || '—' }}
+                              </td>
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 font-mono text-center font-medium">
+                                {{ item.qte | number }}
+                              </td>
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 font-mono text-center text-slate-500">
+                                {{ item.pu | number }}
+                              </td>
+                              <td class="px-4 py-3 border border-slate-300 dark:border-slate-700 font-mono text-center font-semibold text-indigo-600 dark:text-indigo-400">
+                                {{ item.montant | number }}
+                              </td>
+                              @if (idx === 0) {
+                                <td [attr.rowspan]="len" class="px-4 py-3 text-center border border-slate-300 dark:border-slate-700 align-middle bg-slate-50/10">
+                                  <div class="flex items-center justify-center">
+                                    <select 
+                                      (change)="onActionChange($event, op)"
+                                      class="px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 cursor-pointer max-w-[120px]"
+                                    >
+                                      <option value="" disabled selected>Actions...</option>
+                                      <option value="edit">Modifier</option>
+                                      @if (authService.currentUser()?.role === 'admin') {
+                                        <option value="excel">Excel</option>
+                                        <option value="pdf">PDF</option>
+                                        <option value="docx">Word</option>
+                                      }
+                                      <option value="delete" class="text-rose-600 dark:text-rose-400 font-semibold">Supprimer</option>
+                                    </select>
+                                  </div>
+                                </td>
+                              }
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+
+              </div>
+            }
+          </div>
+        } @else {
+          <!-- Organisation des données par Tableaux distincts de Types d'Opérations -->
+          <div class="space-y-12 pb-12" id="detailed-types-wrapper">
           @for (group of detailedTypeGroups(); track group.type) {
             @let isWagon = group.type.toLowerCase().includes('wagon');
             @let isBleWagon = group.type === 'Chargement Wagon Blé' || (isWagon && group.product === 'Blé');
-            @let isFarineWagon = group.type === 'Chargement Wagon Farine' || (isWagon && group.product?.toLowerCase()?.includes('farine'));
+            @let isFarineWagon = group.type === 'Chargement Wagon Farine' || (isWagon && group.product.toLowerCase().includes('farine'));
             @let showDn = group.type === 'Chargement' && (selectedSummary()?.site === 'AFISA' || selectedSummary()?.site === 'SCMC');
             
             <div class="w-full" id="type-group-{{group.type}}">
@@ -715,7 +952,7 @@
                       @for (item of op.items; track $index; let idx = $index; let len = $count) {
                         <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800">
                           <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono text-slate-500 dark:text-slate-400">
-                            {{ item.date }}
+                            {{ formatDateFr(item.date) }}
                           </td>
                           @if (showDn || group.type === 'Chargement Camions' || isWagon) {
                             <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
@@ -743,28 +980,20 @@
                           </td>
                           @if (idx === 0) {
                             <td [attr.rowspan]="len" class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle bg-slate-50/10">
-                              <div class="flex items-center gap-2 justify-center">
-                                <button 
-                                  (click)="exportToPdf(op)"
-                                  class="p-1 h-8 w-8 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-emerald-200 dark:border-emerald-800/60 bg-emerald-500/5"
-                                  title="Exporter cette opération en PDF"
+                              <div class="flex items-center justify-center">
+                                <select 
+                                  (change)="onActionChange($event, op)"
+                                  class="px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 cursor-pointer max-w-[120px]"
                                 >
-                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">picture_as_pdf</mat-icon>
-                                </button>
-                                <button 
-                                  (click)="editOperation(op)"
-                                  class="p-1 h-8 w-8 text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-amber-200 dark:border-amber-800/60 bg-amber-500/5"
-                                  title="Modifier cette opération"
-                                >
-                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">edit</mat-icon>
-                                </button>
-                                <button 
-                                  (click)="deleteOp(op.id)"
-                                  class="p-1 h-8 w-8 text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-all cursor-pointer focus:outline-hidden inline-flex items-center justify-center border border-rose-200 dark:border-rose-800/60 bg-rose-500/5"
-                                  title="Supprimer cette opération"
-                                >
-                                  <mat-icon class="!text-[16px] !h-4 !w-4 flex items-center justify-center">delete</mat-icon>
-                                </button>
+                                  <option value="" disabled selected>Actions...</option>
+                                  <option value="edit">Modifier</option>
+                                  @if (authService.currentUser()?.role === 'admin') {
+                                    <option value="excel">Excel</option>
+                                    <option value="pdf">PDF</option>
+                                    <option value="docx">Word</option>
+                                  }
+                                  <option value="delete" class="text-rose-600 dark:text-rose-400 font-semibold">Supprimer</option>
+                                </select>
                               </div>
                             </td>
                           }
@@ -814,8 +1043,47 @@
             </div>
           }
         </div>
+      }
+    </div>
+  }
+}
+
+  <!-- BOÎTE DE DIALOGUE DE BLOCAGE DE SAISIE (SEMAINE NON CLÔTURÉE) -->
+  @if (validationBlockMessage()) {
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 shadow-xl" id="validation-block-modal">
+      <button 
+        type="button"
+        (click)="validationBlockMessage.set(null)"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300 w-full h-full cursor-default"
+        aria-label="Fermer"
+      ></button>
+
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl relative z-10 transform transition-all duration-300 scale-100">
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl shrink-0">
+            <mat-icon class="!text-[24px] !h-6 !w-6 flex items-center justify-center">lock</mat-icon>
+          </div>
+          <div class="space-y-2 flex-1">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">
+              Saisie Bloquée — Semaine active non clôturée
+            </h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+              {{ validationBlockMessage() }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
+          <button 
+            type="button" 
+            (click)="validationBlockMessage.set(null)"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer border border-slate-200 dark:border-slate-700"
+          >
+            Fermer
+          </button>
+        </div>
       </div>
-    }
+    </div>
   }
 
   <!-- BOÎTE DE DIALOGUE DE CONFIRMATION DE SUPPRESSION PERSONNALISÉE -->

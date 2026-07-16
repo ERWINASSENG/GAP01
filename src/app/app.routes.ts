@@ -16,11 +16,6 @@ export const routes: Routes = [
     title: 'PortSync Pro - Connexion'
   },
   {
-    path: 'register',
-    component: RegisterComponent,
-    title: 'PortSync Pro - Inscription'
-  },
-  {
     path: 'reset',
     component: ResetComponent,
     title: 'PortSync Pro - Réinitialisation de mot de passe'
@@ -51,6 +46,13 @@ export const routes: Routes = [
         canActivate: [roleGuard],
         data: { roles: ['admin'] },
         title: 'PortSync Pro - Administration'
+      },
+      {
+        path: 'admin/register',
+        component: RegisterComponent,
+        canActivate: [roleGuard],
+        data: { roles: ['admin'] },
+        title: 'PortSync Pro - Créer un collaborateur'
       },
       {
         path: '',

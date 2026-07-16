@@ -4,6 +4,12 @@
       <h1 class="text-3xl font-bold text-slate-900 tracking-tight">Vue Administrateur</h1>
       <p class="text-slate-500">Consultez l'ensemble des opérations enregistrées par tous les utilisateurs.</p>
     </div>
+    <div>
+      <a routerLink="/admin/register" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 transition-colors shadow-sm font-medium text-sm">
+        <mat-icon class="text-sm w-4 h-4 leading-none">person_add</mat-icon>
+        Créer un utilisateur
+      </a>
+    </div>
   </header>
 
   <div class="grid grid-cols-1 gap-6">
@@ -23,6 +29,12 @@
             <span class="px-3 py-1 rounded-full bg-slate-200 text-slate-700 text-xs font-bold">
               {{ summary.count }} opérations
             </span>
+            <button 
+              (click)="exportToExcel(summary)"
+              class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+              title="Exporter en Excel">
+              <mat-icon>table_view</mat-icon>
+            </button>
             <button 
               (click)="exportToPdf(summary)"
               class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"

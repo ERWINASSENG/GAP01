@@ -1,11 +1,14 @@
-import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, DestroyRef, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CahierService } from '../../../core/services/cahier.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
-import { Operation, MonthlySummary, OperationItem } from '../../../shared/models/cahier.model';
+import { DocxExportService } from '../../../core/services/docx-export.service';
+import { ExcelExportService } from '../../../core/services/excel-export.service';
+import { Operation, MonthlySummary, OperationItem, WorkWeek } from '../../../shared/models/cahier.model';
 
 interface OperationFormValue {
   site?: string;
@@ -30,7 +33,10 @@ interface OperationFormValue {
 })
 export class CahierComponent implements OnInit {
   readonly cahierService = inject(CahierService);
+  readonly authService = inject(AuthService);
   private readonly pdfService = inject(PdfExportService);
+  private readonly docxService = inject(DocxExportService);
+  private readonly excelService = inject(ExcelExportService);
   private readonly destroyRef = inject(DestroyRef);
 
   // UI state signals
@@ -39,6 +45,26 @@ export class CahierComponent implements OnInit {
   readonly selectedSummaryKeys = signal<{ month: string; site: string } | null>(null);
   readonly isSaving = signal<boolean>(false);
   readonly operationToDelete = signal<string | null>(null);
+  readonly validationBlockMessage = signal<string | null>(null);
+  readonly detailGroupingMode = signal<'week' | 'type'>('week');
+
+  readonly activeWeeksBySite = computed(() => {
+    const weeks = this.cahierService.weeks();
+    const result: Record<string, WorkWeek> = {};
+    this.sites.forEach(site => {
+      const active = weeks.find(w => w.site === site && !w.is_closed);
+      if (active) {
+        result[site] = active;
+      }
+    });
+    return result;
+  });
+
+  readonly dateValidationWarning = computed(() => {
+    const val = this.formValue();
+    if (!val.site || !val.date) return null;
+    return this.cahierService.validateOperationDate(val.site, val.date);
+  });
 
   readonly selectedSummary = computed<MonthlySummary | null>(() => {
     const keys = this.selectedSummaryKeys();
@@ -273,104 +299,13 @@ export class CahierComponent implements OnInit {
     this.globalDnPrefix.set(newPrefix);
   }
 
-  constructor() {
-    effect(() => {
-      const isOpen = this.isCreationPageOpen();
-      const step = this.currentStep();
-      const draftId = this.activeDraftId();
-      const prefix = this.globalDnPrefix();
-      
-      this.saveTemporaryState(isOpen, step, draftId, prefix);
-    });
-  }
-
-  private saveTemporaryState(
-    isOpen = this.isCreationPageOpen(),
-    step = this.currentStep(),
-    draftId = this.activeDraftId(),
-    prefix = this.globalDnPrefix()
-  ) {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    
-    if (!isOpen) {
-      localStorage.removeItem('cahier_temporary_form_state');
-      return;
-    }
-
-    const formRaw = this.operationForm.getRawValue();
-    const stateToSave = {
-      isOpen,
-      step,
-      draftId,
-      prefix,
-      formRaw
-    };
-
-    localStorage.setItem('cahier_temporary_form_state', JSON.stringify(stateToSave));
-  }
-
-  private restoreTemporaryState() {
-    if (typeof window === 'undefined' || !window.localStorage) return;
-    
-    const saved = localStorage.getItem('cahier_temporary_form_state');
-    if (!saved) return;
-
-    try {
-      const state = JSON.parse(saved);
-      if (state && state.isOpen) {
-        this.activeDraftId.set(state.draftId || null);
-        this.globalDnPrefix.set(state.prefix || 'DN');
-        
-        if (state.formRaw) {
-          const raw = state.formRaw;
-          this.operationForm.patchValue({
-            site: raw.site,
-            type: raw.type,
-            date: raw.date,
-            heure: raw.heure,
-            quantite: raw.quantite,
-            produit: raw.produit,
-            destination: raw.destination,
-            sonLevel: raw.sonLevel,
-            frequence: raw.frequence,
-            details: raw.details
-          }, { emitEvent: false });
-
-          this.itemsFormArray.clear();
-          if (raw.items && Array.isArray(raw.items)) {
-            raw.items.forEach((item: Partial<OperationItem>) => {
-              this.itemsFormArray.push(this.createItemFormGroup(
-                item.date,
-                item.dn,
-                item.produit,
-                item.qte,
-                item.pu,
-                item.montant
-              ));
-            });
-          }
-        }
-
-        this.currentStep.set(state.step || 1);
-        this.isCreationPageOpen.set(true);
-      }
-    } catch (e) {
-      console.error('Error restoring temporary form state:', e);
-      localStorage.removeItem('cahier_temporary_form_state');
-    }
-  }
-
   ngOnInit() {
-    // Restore state from localStorage if exists
-    this.restoreTemporaryState();
-
     // Sync form changes to our formValue signal for live preview
     this.formValue.set(this.operationForm.value as OperationFormValue);
     this.operationForm.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(val => {
         this.formValue.set(val as OperationFormValue);
-        this.saveTemporaryState();
       });
   }
 
@@ -686,9 +621,15 @@ export class CahierComponent implements OnInit {
       return;
     }
 
+    const val = this.operationForm.getRawValue();
+    const validation = this.cahierService.validateOperationDate(val.site, val.date);
+    if (!validation.allowed) {
+      this.validationBlockMessage.set(validation.reason || 'Saisie bloquée.');
+      return;
+    }
+
     this.isSaving.set(true);
     try {
-      const val = this.operationForm.getRawValue();
       let rawItems = (val.items || []) as {
         date?: string;
         dnPrefix?: string;
@@ -728,6 +669,10 @@ export class CahierComponent implements OnInit {
 
       await this.cahierService.addOperation(opData);
       this.isCreationPageOpen.set(false); // Close directly, bypassing dirty closeModal check
+    } catch (err: unknown) {
+      console.error(err);
+      const errMsg = err instanceof Error ? err.message : 'Une erreur est survenue lors de l\'enregistrement.';
+      this.validationBlockMessage.set(errMsg);
     } finally {
       this.isSaving.set(false);
     }
@@ -762,6 +707,60 @@ export class CahierComponent implements OnInit {
     this.pdfService.exportOperationToPdf(op);
   }
 
+  // Exports an operation to DOCX format using the DOCX export service
+  exportToDocx(op: Operation) {
+    this.docxService.exportOperationToDocx(op);
+  }
+
+  // Exports an operation to Excel format using the Excel export service
+  exportToExcel(op: Operation) {
+    this.excelService.exportOperationToExcel(op);
+  }
+
+  // Handles dropdown action selection
+  onActionChange(event: Event, op: Operation) {
+    const selectElement = event.target as HTMLSelectElement;
+    const value = selectElement.value;
+    if (!value) return;
+
+    switch (value) {
+      case 'edit':
+        this.editOperation(op);
+        break;
+      case 'delete':
+        this.deleteOp(op.id);
+        break;
+      case 'excel':
+        this.exportToExcel(op);
+        break;
+      case 'pdf':
+        this.exportToPdf(op);
+        break;
+      case 'docx':
+        this.exportToDocx(op);
+        break;
+    }
+
+    // Reset select back to placeholder
+    selectElement.value = '';
+  }
+
+  // Exports the active monthly summary to DOCX format using the DOCX export service
+  exportMonthlyToDocx() {
+    const summary = this.selectedSummary();
+    if (summary) {
+      this.docxService.exportMonthlySummaryToDocx(summary);
+    }
+  }
+
+  // Exports the active monthly summary to Excel format using the Excel export service
+  exportMonthlyToExcel() {
+    const summary = this.selectedSummary();
+    if (summary) {
+      this.excelService.exportMonthlySummaryToExcel(summary);
+    }
+  }
+
   // Set detailed summary view
   showDetail(summary: MonthlySummary) {
     this.selectedSummaryKeys.set({
@@ -774,6 +773,65 @@ export class CahierComponent implements OnInit {
   backToMonthly() {
     this.selectedSummaryKeys.set(null);
   }
+
+  async closeWeek(weekId: string) {
+    this.isSaving.set(true);
+    try {
+      await this.cahierService.closeWeek(weekId);
+    } finally {
+      this.isSaving.set(false);
+    }
+  }
+
+  formatDateFr(dateStr: string): string {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return dateStr;
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  readonly detailedWeekGroups = computed(() => {
+    const summary = this.selectedSummary();
+    if (!summary) return [];
+
+    const ops = [...summary.operations];
+    const weeks = this.cahierService.weeks();
+
+    const weekMap = new Map<string, WorkWeek>();
+    weeks.forEach(w => weekMap.set(w.id, w));
+
+    const groups: Record<string, { week?: WorkWeek; ops: Operation[]; label: string; start_date: string }> = {};
+
+    ops.forEach(op => {
+      let weekId = op.week_id;
+      let week = weekId ? weekMap.get(weekId) : undefined;
+      
+      if (!week && op.site) {
+        week = weeks.find(w => w.site === op.site && op.date >= w.start_date && op.date <= w.end_date);
+        weekId = week?.id;
+      }
+
+      const key = weekId || 'no-week';
+      if (!groups[key]) {
+        let label = 'Hors semaine / Non assigné';
+        let start_date = op.date;
+        if (week) {
+          const status = week.is_closed ? 'Clôturée' : 'En cours';
+          label = `Semaine du ${this.formatDateFr(week.start_date)} au ${this.formatDateFr(week.end_date)} (${status})`;
+          start_date = week.start_date;
+        }
+        groups[key] = {
+          week,
+          ops: [],
+          label,
+          start_date
+        };
+      }
+      groups[key].ops.push(op);
+    });
+
+    return Object.values(groups).sort((a, b) => b.start_date.localeCompare(a.start_date));
+  });
 
   // Groups operations by type for the detailed view, sorted by chronological order of their first entry (saisie)
   readonly detailedTypeGroups = computed(() => {

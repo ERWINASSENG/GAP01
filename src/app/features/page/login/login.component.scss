@@ -121,54 +121,5 @@
       @apply text-emerald-400 hover:text-emerald-300 font-semibold underline underline-offset-4 cursor-pointer;
     }
   }
-
-  /* Section Profils de Démonstration */
-  #demo-profiles-panel {
-    @apply mt-8 border-t border-slate-800/60 pt-6;
-
-    .panel-title {
-      @apply text-xs font-medium text-slate-400 uppercase tracking-wider mb-4;
-    }
-
-    .profiles-grid {
-      @apply grid grid-cols-1 sm:grid-cols-2 gap-3;
-    }
-
-    .demo-btn {
-      @apply flex items-center justify-between p-3 rounded-xl bg-slate-950/30 border border-slate-800/40 hover:border-emerald-500/40 hover:bg-slate-950/60 text-left transition-all cursor-pointer;
-
-      .profile-info {
-        @apply flex items-center gap-3;
-      }
-
-      .profile-icon-admin {
-        @apply text-emerald-400 bg-emerald-950/40 p-1.5 rounded-lg text-lg;
-      }
-
-      .profile-icon-user {
-        @apply text-purple-400 bg-purple-950/40 p-1.5 rounded-lg text-lg;
-      }
-
-      .profile-title {
-        @apply text-xs font-semibold text-white group-hover:text-emerald-400 transition-colors;
-        
-        &.user-type {
-          @apply group-hover:text-purple-400;
-        }
-      }
-
-      .profile-subtitle {
-        @apply text-[10px] text-slate-500 font-mono;
-      }
-
-      .arrow-icon {
-        @apply text-slate-600 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all text-sm;
-        
-        &.user-type {
-          @apply group-hover:text-purple-400;
-        }
-      }
-    }
-  }
 }
 

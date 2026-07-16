@@ -1,12 +1,13 @@
 import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
 import {Router, RouterLink} from '@angular/router';
 import {FormBuilder, ReactiveFormsModule, Validators} from '@angular/forms';
+import {MatIconModule} from '@angular/material/icon';
 import {AuthService} from '../../../core/services/auth.service';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-register',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, MatIconModule],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss'
 })
@@ -42,15 +43,11 @@ export class RegisterComponent {
     this.isLoading.set(false);
 
     if (res.success) {
-      if (res.isLocal) {
-        this.successMessage.set('Compte créé avec succès en mode local (pas de validation e-mail requise) ! Vous allez être redirigé vers la page de connexion.');
-      } else {
-        this.successMessage.set('Compte créé avec succès ! Un e-mail de confirmation peut être envoyé selon vos paramètres Supabase. Vous allez être redirigé vers la page de connexion.');
-      }
+      this.successMessage.set('Compte de collaborateur créé avec succès dans Supabase !');
       this.registerForm.reset({ role: 'user' });
       setTimeout(() => {
-        this.router.navigate(['/login']);
-      }, 3500);
+        this.successMessage.set('');
+      }, 6000);
     } else {
       this.errorMessage.set(res.error || "Une erreur est survenue lors de l'inscription.");
     }
