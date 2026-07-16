@@ -206,16 +206,27 @@ export class CahierService {
     if (this.authService.currentUser()?.role !== 'admin') return;
 
     try {
-      const { data, error } = await this.supabaseService.client
-        .from('operations')
-        .select('*, operation_items(*)')
-        .order('date', { ascending: false });
+      const session = await this.supabaseService.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        console.error('❌ Erreur: Session non valide pour admin fetch.');
+        return;
+      }
 
-      if (!error && data) {
-        const mappedOps = this.mapDatabaseOperations(data);
+      const response = await fetch('/api/admin/operations', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const data = await response.json();
+
+      if (response.ok && data.success && data.operations) {
+        const mappedOps = this.mapDatabaseOperations(data.operations);
         this._adminOperations.set(mappedOps);
-      } else if (error) {
-        console.error('❌ Erreur Supabase (Admin Fetch):', error.message);
+      } else {
+        console.error('❌ Erreur serveur (Admin Fetch):', data.error);
       }
     } catch (err) {
       console.error('❌ Erreur Réseau (Admin Fetch):', err);

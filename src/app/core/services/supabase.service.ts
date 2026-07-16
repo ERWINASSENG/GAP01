@@ -43,32 +43,6 @@ export class SupabaseService {
   }
 
   /**
-   * Inscription d'un nouvel utilisateur (par un admin, sans modifier la session courante)
-   */
-  async adminSignUp(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user'): Promise<AuthResponse> {
-    // Create a temporary client with no session persistence to avoid logging out the admin
-    const tempClient = createClient(environment.supabaseUrl, environment.supabaseKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false
-      }
-    });
-
-    return await tempClient.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          display_name: displayName,
-          role: role,
-          avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150'
-        }
-      }
-    });
-  }
-
-  /**
    * Connexion d'un utilisateur
    */
   async signIn(email: string, password: string): Promise<AuthResponse> {

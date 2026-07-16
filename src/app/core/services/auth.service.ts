@@ -96,14 +96,32 @@ export class AuthService {
   }
 
   /**
-   * Inscription d'un nouvel utilisateur dans Supabase
+   * Inscription d'un nouvel utilisateur dans Supabase via l'API sécurisée côté serveur
    */
   async register(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user'): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await this.supabaseService.adminSignUp(email, password, displayName, role);
-      if (error) {
-        return { success: false, error: error.message };
+      const session = await this.supabaseService.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        return { success: false, error: 'Session non valide ou expirée.' };
       }
+
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ email, password, displayName, role })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Erreur lors de la création de l\'utilisateur' };
+      }
+
       return { success: true };
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Erreur lors de l'inscription.";

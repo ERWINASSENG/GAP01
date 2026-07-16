@@ -20,10 +20,10 @@ export class LoginComponent {
 
   readonly loginForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: [''] // Facultatif pour les comptes démo
+    password: ['', [Validators.required]]
   });
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.loginForm.invalid) return;
 
     this.isLoading.set(true);
@@ -32,16 +32,13 @@ export class LoginComponent {
     const email = this.loginForm.value.email ?? '';
     const password = this.loginForm.value.password ?? '';
     
-    // Simulation réseau ultra-rapide et fluide
-    setTimeout(async () => {
-      const res = await this.authService.login(email, password || undefined);
-      this.isLoading.set(false);
+    const res = await this.authService.login(email, password);
+    this.isLoading.set(false);
 
-      if (res.success) {
-        this.router.navigate(['/dashboard']);
-      } else {
-        this.errorMessage.set(res.error || 'Utilisateur introuvable avec cette adresse email.');
-      }
-    }, 600);
+    if (res.success) {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.errorMessage.set(res.error || 'Utilisateur introuvable avec cette adresse email.');
+    }
   }
 }
