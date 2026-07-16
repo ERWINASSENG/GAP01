@@ -156,7 +156,9 @@
                         <button 
                           type="button" 
                           (click)="closeWeek(dateValidationWarning()?.activeWeek?.id!)"
-                          class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
+                          [disabled]="!canCloseWeek(dateValidationWarning()?.activeWeek)"
+                          [title]="!canCloseWeek(dateValidationWarning()?.activeWeek) ? 'La semaine n\'est pas encore terminée' : ''"
+                          class="px-3 py-1 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer flex items-center gap-1"
                         >
                           <mat-icon class="!text-xs !h-3.5 !w-3.5">lock_open</mat-icon>
                           <span>Clôturer la semaine en cours</span>
@@ -596,8 +598,9 @@
                   <button 
                     type="button"
                     (click)="closeWeek(activeWeek.id)"
-                    [disabled]="isSaving()"
-                    class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 text-xs font-bold rounded-lg transition-all cursor-pointer shadow-xs border border-transparent"
+                    [disabled]="isSaving() || !canCloseWeek(activeWeek)"
+                    [title]="!canCloseWeek(activeWeek) ? 'La semaine n\'est pas encore terminée' : ''"
+                    class="w-full flex items-center justify-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all shadow-xs border border-transparent"
                   >
                     <mat-icon class="!text-[14px] !h-3.5 !w-3.5 flex items-center justify-center">lock</mat-icon>
                     <span>Clôturer la semaine</span>
@@ -815,7 +818,9 @@
                     <button 
                       type="button"
                       (click)="closeWeek(weekGroup.week.id)"
-                      class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                      [disabled]="!canCloseWeek(weekGroup.week)"
+                      [title]="!canCloseWeek(weekGroup.week) ? 'La semaine n\'est pas encore terminée' : ''"
+                      class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1"
                     >
                       <mat-icon class="!text-[12px] !h-3 !w-3 flex items-center justify-center">lock</mat-icon>
                       <span>Clôturer la semaine</span>

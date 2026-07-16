@@ -122,6 +122,15 @@ export class CahierService {
    * Closes an active week manually
    */
   async closeWeek(weekId: string): Promise<boolean> {
+    const weekToClose = this._weeks().find(w => w.id === weekId);
+    if (!weekToClose) return false;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (today < weekToClose.end_date) {
+      console.warn(`Cannot close week before its end date (${weekToClose.end_date})`);
+      return false;
+    }
+
     const closedAt = new Date().toISOString();
 
     const updated = this._weeks().map(w => {

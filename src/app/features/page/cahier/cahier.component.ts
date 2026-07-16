@@ -774,6 +774,12 @@ export class CahierComponent implements OnInit {
     this.selectedSummaryKeys.set(null);
   }
 
+  canCloseWeek(week: WorkWeek | undefined | null): boolean {
+    if (!week) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return today >= week.end_date;
+  }
+
   async closeWeek(weekId: string) {
     this.isSaving.set(true);
     try {
