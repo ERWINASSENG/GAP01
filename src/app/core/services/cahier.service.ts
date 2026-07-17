@@ -1,4 +1,5 @@
-import { Injectable, inject, signal, computed, effect } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Operation, MonthlySummary, WorkWeek } from '../../shared/models/cahier.model';
 import { SupabaseService } from './supabase.service';
 import { AuthService } from './auth.service';
@@ -9,6 +10,8 @@ import { AuthService } from './auth.service';
 export class CahierService {
   private readonly supabaseService = inject(SupabaseService);
   private readonly authService = inject(AuthService);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly isBrowser = isPlatformBrowser(this.platformId);
 
   // Core state of operations and weeks using signals
   private readonly _operations = signal<Operation[]>([]);
@@ -36,7 +39,8 @@ export class CahierService {
    * Loads initial weeks from Supabase
    */
   private async loadInitialWeeks(userId?: string) {
-    if (!userId) {
+    const user = this.authService.currentUser();
+    if (!userId || !user?.assignedSiteName) {
       this._weeks.set([]);
       return;
     }
@@ -186,7 +190,8 @@ export class CahierService {
    * Loads initial operations from Supabase if table is ready
    */
   private async loadInitialOperations(userId?: string) {
-    if (!userId) {
+    const user = this.authService.currentUser();
+    if (!userId || !user?.assignedSiteName) {
       this._operations.set([]);
       return;
     }
@@ -212,7 +217,13 @@ export class CahierService {
    * Loads all operations from all users (Admin only)
    */
   async loadAllOperationsForAdmin() {
-    if (this.authService.currentUser()?.role !== 'admin') return;
+    if (!this.isBrowser) return;
+
+    const user = this.authService.currentUser();
+    if (user?.role !== 'admin' || !user?.assignedSiteName) {
+      this._adminOperations.set([]);
+      return;
+    }
 
     try {
       const session = await this.supabaseService.getSession();

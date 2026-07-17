@@ -459,6 +459,15 @@ export class CahierComponent implements OnInit {
           item.montant
         ));
       });
+    } else if (op.quantite !== undefined || op.destination || op.produit) {
+      this.itemsFormArray.push(this.createItemFormGroup(
+        op.date,
+        op.destination || '',
+        op.produit || '',
+        op.quantite || 0,
+        0,
+        0
+      ));
     }
 
     this.currentStep.set(3); // Go directly to detailed stage

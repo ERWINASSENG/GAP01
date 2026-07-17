@@ -20,11 +20,14 @@ export class RegisterComponent {
   readonly errorMessage = signal('');
   readonly successMessage = signal('');
 
+  readonly sites = ['SCMC', 'TUSCANI', 'AFISA', 'AUTRE'];
+
   readonly registerForm = this.fb.group({
     displayName: ['', [Validators.required]],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(6)]],
-    role: ['user', [Validators.required]]
+    role: ['user', [Validators.required]],
+    assignedSiteName: ['']
   });
 
   async onSubmit(): Promise<void> {
@@ -38,13 +41,14 @@ export class RegisterComponent {
     const email = this.registerForm.value.email ?? '';
     const password = this.registerForm.value.password ?? '';
     const role = (this.registerForm.value.role as 'admin' | 'user') ?? 'user';
+    const assignedSiteName = this.registerForm.value.assignedSiteName ?? undefined;
 
-    const res = await this.authService.register(email, password, displayName, role);
+    const res = await this.authService.register(email, password, displayName, role, assignedSiteName);
     this.isLoading.set(false);
 
     if (res.success) {
       this.successMessage.set('Compte de collaborateur créé avec succès dans Supabase !');
-      this.registerForm.reset({ role: 'user' });
+      this.registerForm.reset({ role: 'user', assignedSiteName: '' });
       setTimeout(() => {
         this.successMessage.set('');
       }, 6000);

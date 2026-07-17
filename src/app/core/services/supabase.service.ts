@@ -9,7 +9,11 @@ export class SupabaseService {
   private supabase: SupabaseClient;
 
   constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey, {
+    let url = environment.supabaseUrl;
+    if (!url || !url.startsWith('http')) {
+      url = 'https://jwpigzkxkbszxzngfepn.supabase.co';
+    }
+    this.supabase = createClient(url, environment.supabaseKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,

@@ -1,6 +1,32 @@
 <div class="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6" id="cahier-page-container">
 
-  @if (isCreationPageOpen()) {
+  @if (!authService.currentUser()?.assignedSiteName) {
+    <!-- Aucun site spécifié : Affichage d'un écran d'accès restreint poli et professionnel -->
+    <div class="flex flex-col items-center justify-center py-16 px-4 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xs space-y-5 animate-fade-in" id="no-site-error-container">
+      <div class="w-16 h-16 rounded-2xl bg-amber-500/10 dark:bg-amber-500/5 flex items-center justify-center text-amber-500" id="no-site-icon">
+        <mat-icon class="!text-[32px] !h-8 !w-8 flex items-center justify-center">lock_person</mat-icon>
+      </div>
+      
+      <div class="max-w-md space-y-2">
+        <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Accès restreint</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          Aucun site d'intervention ne vous est actuellement spécifié. Par défaut, l'affichage et l'enregistrement d'opérations vous sont restreints.
+        </p>
+        <p class="text-xs text-slate-400 dark:text-slate-500">
+          Veuillez contacter un administrateur portuaire pour vous faire assigner un site de travail.
+        </p>
+      </div>
+
+      <div class="pt-2">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-500 dark:text-slate-400 font-mono">
+          <mat-icon class="!text-[14px] !h-3.5 !w-3.5 flex items-center justify-center text-slate-400">info</mat-icon>
+          <span>ID de session : {{ authService.currentUser()?.id }}</span>
+        </div>
+      </div>
+    </div>
+  } @else {
+
+    @if (isCreationPageOpen()) {
     <!-- VUE DE CRÉATION SUR UNE PAGE COMPLÈTE -->
     <div class="-mt-2 sm:-mt-4 lg:-mt-6 space-y-4 animate-fade-in" id="creation-page-container">
       
@@ -1003,6 +1029,44 @@
                             </td>
                           }
                         </tr>
+                      } @empty {
+                        <tr class="hover:bg-slate-50/30 dark:hover:bg-slate-950/10 transition-all text-xs border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-500 italic">
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-mono">
+                            {{ formatDateFr(op.date) }}
+                          </td>
+                          @if (showDn || group.type === 'Chargement Camions' || isWagon) {
+                            <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center font-semibold text-slate-800 dark:text-slate-200">
+                              {{ op.destination || '-' }}
+                            </td>
+                          }
+                          @if (group.type !== 'Chargement Camions' && !isWagon) {
+                            <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 text-center align-middle bg-slate-50/5 whitespace-normal break-words min-w-[150px] max-w-[300px]">
+                              {{ op.produit || '-' }}
+                            </td>
+                          }
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center">
+                            {{ (op.quantite !== undefined && op.quantite !== null) ? (op.quantite | number) : '-' }}
+                          </td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center">-</td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 border border-slate-300 dark:border-slate-700 font-mono text-center">-</td>
+                          <td class="px-2 py-2 sm:px-4 sm:py-3 text-center border border-slate-300 dark:border-slate-700 align-middle bg-slate-50/10 not-italic">
+                            <div class="flex items-center justify-center">
+                              <select 
+                                (change)="onActionChange($event, op)"
+                                class="px-2 py-1 text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 dark:text-slate-300 cursor-pointer max-w-[120px]"
+                              >
+                                <option value="" disabled selected>Actions...</option>
+                                <option value="edit">Modifier</option>
+                                @if (authService.currentUser()?.role === 'admin') {
+                                  <option value="excel">Excel</option>
+                                  <option value="pdf">PDF</option>
+                                  <option value="docx">Word</option>
+                                }
+                                <option value="delete" class="text-rose-600 dark:text-rose-400 font-semibold">Supprimer</option>
+                              </select>
+                            </div>
+                          </td>
+                        </tr>
                       }
                     }
                   </tbody>
@@ -1152,6 +1216,8 @@
         </div>
       </div>
     </div>
+  }
+
   }
 
 </div>

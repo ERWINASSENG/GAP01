@@ -33,3 +33,15 @@ export interface UserSession {
   user: PortUser;
   expiresAt: number;
 }
+
+export interface CreatedUser {
+  id: string;
+  email?: string;
+  user_metadata?: {
+    display_name?: string;
+    role?: string;
+    avatar_url?: string;
+    created_by?: string;
+  };
+  created_at?: string;
+}

@@ -1,5 +1,5 @@
 import {Injectable, signal, computed, inject} from '@angular/core';
-import {PortUser} from '../../shared/models/auth.model';
+import {PortUser, CreatedUser} from '../../shared/models/auth.model';
 import {SupabaseService} from './supabase.service';
 import {User} from '@supabase/supabase-js';
 
@@ -63,8 +63,8 @@ export class AuthService {
       displayName: metadata['display_name'] || metadata['fullName'] || 'Collaborateur',
       role: metadata['role'] || 'user',
       avatarUrl: metadata['avatar_url'] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      assignedSiteId: 'site-1',
-      assignedSiteName: 'Terminal à Conteneurs A'
+      assignedSiteId: metadata['assignedSiteId'] || undefined,
+      assignedSiteName: metadata['assignedSiteName'] || undefined
     };
     this.currentUserSignal.set(portUser);
   }
@@ -98,7 +98,7 @@ export class AuthService {
   /**
    * Inscription d'un nouvel utilisateur dans Supabase via l'API sécurisée côté serveur
    */
-  async register(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user'): Promise<{ success: boolean; error?: string }> {
+  async register(email: string, password: string, displayName: string, role: 'admin' | 'user' = 'user', assignedSiteName?: string): Promise<{ success: boolean; error?: string }> {
     try {
       const session = await this.supabaseService.getSession();
       const token = session?.access_token;
@@ -113,7 +113,7 @@ export class AuthService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ email, password, displayName, role })
+        body: JSON.stringify({ email, password, displayName, role, assignedSiteName })
       });
 
       const data = await response.json();
@@ -125,6 +125,38 @@ export class AuthService {
       return { success: true };
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : "Erreur lors de l'inscription.";
+      return { success: false, error: errMsg };
+    }
+  }
+
+  /**
+   * Récupère la liste des collaborateurs créés par l'administrateur connecté
+   */
+  async getCreatedUsers(): Promise<{ success: boolean; users?: CreatedUser[]; error?: string }> {
+    try {
+      const session = await this.supabaseService.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        return { success: false, error: 'Session non valide ou expirée.' };
+      }
+
+      const response = await fetch('/api/admin/users', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Erreur lors de la récupération des utilisateurs' };
+      }
+
+      return { success: true, users: data.users };
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "Erreur lors de la récupération des utilisateurs.";
       return { success: false, error: errMsg };
     }
   }
