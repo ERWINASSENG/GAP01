@@ -125,13 +125,13 @@
                 </div>
                 <div>
                   <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border"
-                        [class.bg-amber-50]="user.user_metadata?.role === 'admin'"
-                        [class.text-amber-700]="user.user_metadata?.role === 'admin'"
-                        [class.border-amber-100]="user.user_metadata?.role === 'admin'"
-                        [class.bg-indigo-50]="user.user_metadata?.role !== 'admin'"
-                        [class.text-indigo-700]="user.user_metadata?.role !== 'admin'"
-                        [class.border-indigo-100]="user.user_metadata?.role !== 'admin'">
-                    {{ user.user_metadata?.role || 'user' }}
+                        [class.bg-amber-50]="user.app_metadata?.role === 'admin'"
+                        [class.text-amber-700]="user.app_metadata?.role === 'admin'"
+                        [class.border-amber-100]="user.app_metadata?.role === 'admin'"
+                        [class.bg-indigo-50]="user.app_metadata?.role !== 'admin'"
+                        [class.text-indigo-700]="user.app_metadata?.role !== 'admin'"
+                        [class.border-indigo-100]="user.app_metadata?.role !== 'admin'">
+                    {{ user.app_metadata?.role || 'user' }}
                   </span>
                 </div>
               </div>

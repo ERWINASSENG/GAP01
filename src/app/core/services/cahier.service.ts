@@ -49,6 +49,7 @@ export class CahierService {
       const { data, error } = await this.supabaseService.client
         .from('cahier_weeks')
         .select('*')
+        .eq('site', user.assignedSiteName)
         .order('start_date', { ascending: false });
 
       if (!error && data) {
@@ -101,11 +102,12 @@ export class CahierService {
       created_at: new Date().toISOString()
     };
 
-    const updated = [newWeek, ...this._weeks()];
+    const previousWeeks = this._weeks();
+    const updated = [newWeek, ...previousWeeks];
     this._weeks.set(updated);
 
     try {
-      await this.supabaseService.client
+      const { error } = await this.supabaseService.client
         .from('cahier_weeks')
         .insert([{
           id: newWeek.id,
@@ -115,8 +117,12 @@ export class CahierService {
           is_closed: newWeek.is_closed,
           user_id: newWeek.user_id
         }]);
+      if (error) throw error;
     } catch (err) {
       console.error('Error creating week in Supabase:', err);
+      // Rollback
+      this._weeks.set(previousWeeks);
+      throw err;
     }
 
     return newWeek;
@@ -137,7 +143,8 @@ export class CahierService {
 
     const closedAt = new Date().toISOString();
 
-    const updated = this._weeks().map(w => {
+    const previousWeeks = this._weeks();
+    const updated = previousWeeks.map(w => {
       if (w.id === weekId) {
         return { ...w, is_closed: true, closed_at: closedAt };
       }
@@ -152,12 +159,11 @@ export class CahierService {
         .update({ is_closed: true, closed_at: closedAt })
         .eq('id', weekId);
 
-      if (error) {
-        console.error('Error closing week in Supabase:', error.message);
-        return false;
-      }
+      if (error) throw error;
     } catch (err) {
       console.error('Error closing week:', err);
+      // Rollback
+      this._weeks.set(previousWeeks);
       return false;
     }
 
@@ -200,6 +206,7 @@ export class CahierService {
       const { data, error } = await this.supabaseService.client
         .from('operations')
         .select('*, operation_items(*)')
+        .eq('site', user.assignedSiteName)
         .order('date', { ascending: false });
 
       if (!error && data) {

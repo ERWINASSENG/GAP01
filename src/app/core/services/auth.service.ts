@@ -56,15 +56,16 @@ export class AuthService {
 
   private setUserFromSession(user: User): void {
     const metadata = user.user_metadata || {};
+    const appMetadata = user.app_metadata || {};
     const portUser: PortUser = {
       id: user.id,
       email: user.email || '',
       username: user.email?.split('@')[0] || 'user',
       displayName: metadata['display_name'] || metadata['fullName'] || 'Collaborateur',
-      role: metadata['role'] || 'user',
+      role: appMetadata['role'] || metadata['role'] || 'user',
       avatarUrl: metadata['avatar_url'] || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      assignedSiteId: metadata['assignedSiteId'] || undefined,
-      assignedSiteName: metadata['assignedSiteName'] || undefined
+      assignedSiteId: appMetadata['assignedSiteId'] || metadata['assignedSiteId'] || undefined,
+      assignedSiteName: appMetadata['assignedSiteName'] || metadata['assignedSiteName'] || undefined
     };
     this.currentUserSignal.set(portUser);
   }

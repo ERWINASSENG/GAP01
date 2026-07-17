@@ -39,9 +39,12 @@ export interface CreatedUser {
   email?: string;
   user_metadata?: {
     display_name?: string;
-    role?: string;
     avatar_url?: string;
+  };
+  app_metadata?: {
+    role?: string;
     created_by?: string;
+    assignedSiteName?: string;
   };
   created_at?: string;
 }

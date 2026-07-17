@@ -1,7 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { RouterLink } from '@angular/router';
 import { CahierService } from '../../../core/services/cahier.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { ExcelExportService } from '../../../core/services/excel-export.service';
@@ -11,7 +10,7 @@ import { CreatedUser } from '../../../shared/models/auth.model';
 
 @Component({
   selector: 'app-admin-cahier-view',
-  imports: [CommonModule, MatIconModule, RouterLink],
+  imports: [CommonModule, MatIconModule],
   templateUrl: './cahier-view.component.html',
   styleUrl: './cahier-view.component.scss'
 })

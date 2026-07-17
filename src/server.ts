@@ -47,7 +47,7 @@ app.post('/api/admin/users', async (req, res) => {
   const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
   const user = authData?.user;
 
-  if (authError || !user || user.user_metadata?.['role'] !== 'admin') {
+  if (authError || !user || user.app_metadata?.['role'] !== 'admin') {
     res.status(403).json({ error: 'Privilèges administrateur requis.' });
     return;
   }
@@ -59,12 +59,14 @@ app.post('/api/admin/users', async (req, res) => {
     email,
     password,
     email_confirm: true,
-    user_metadata: {
-      display_name: displayName,
+    app_metadata: {
       role: role || 'user',
-      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
       created_by: user.id,
       ...(assignedSiteName ? { assignedSiteName } : {})
+    },
+    user_metadata: {
+      display_name: displayName,
+      avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
     }
   });
 
@@ -107,7 +109,7 @@ app.get('/api/admin/users', async (req, res) => {
   const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
   const user = authData?.user;
 
-  if (authError || !user || user.user_metadata?.['role'] !== 'admin') {
+  if (authError || !user || user.app_metadata?.['role'] !== 'admin') {
     res.status(403).json({ error: 'Privilèges administrateur requis.' });
     return;
   }
@@ -157,7 +159,7 @@ app.get('/api/admin/operations', async (req, res) => {
   const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(token);
   const user = authData?.user;
 
-  if (authError || !user || user.user_metadata?.['role'] !== 'admin') {
+  if (authError || !user || user.app_metadata?.['role'] !== 'admin') {
     res.status(403).json({ error: 'Privilèges administrateur requis.' });
     return;
   }
